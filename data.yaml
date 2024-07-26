@@ -1,0 +1,14 @@
+path: tomato  # dataset root dir
+train: train/images  # train images (relative to 'path')
+val: valid/images  # val images (relative to 'path')
+test: test/images  # test images (optional)
+
+nc: 1
+names: ['tomato']  # class names
+
+roboflow:
+  workspace: phuong-dam-gkpzn
+  project: test-project-hf1d2
+  version: 1
+  license: CC BY 4.0
+  url: https://universe.roboflow.com/phuong-dam-gkpzn/test-project-hf1d2/dataset/1
