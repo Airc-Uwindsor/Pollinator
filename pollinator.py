@@ -52,10 +52,10 @@ class Pollinator:
 
     def offset_with_display(self, offset):
         print(f'Moving to offset: {offset}')
-        self.robot.move_offset(offset, MoveType.ASYNCHRONOUS)
-        while not self.robot.is_operation_done():
-            self.camera.display()
-            self.time.sleep(0.2)
+        self.robot.move_offset(offset, MoveType.SYNCHRONOUS)
+        # while not self.robot.is_operation_done():
+        #     self.camera.display()
+        #     time.sleep(0.2)
 
                 
 

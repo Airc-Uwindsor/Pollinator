@@ -7,10 +7,10 @@ class Camera:
     RES_Y = 480
 
     # RGB color of the target
-    TARGET_COLOR = [255, 160, 0]
+    TARGET_COLOR = [240, 240, 20]
 
     # Sensitivity of the color detection (0-100)
-    COLOR_SENSITIVITY = 8
+    COLOR_SENSITIVITY = 25
 
     # Maximum distance from the target color
     FARTHEST = 3**(1/2) * 255
@@ -143,4 +143,4 @@ if __name__ == '__main__':
     camera = Camera()
     while True:
         camera.display()
-        time.sleep(0.2)
+        time.sleep(0.3)

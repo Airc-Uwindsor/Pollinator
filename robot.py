@@ -3,8 +3,8 @@ import rtde_receive
 import time
 
 class MoveType:
-    SYNCHRONOUS = 1
-    ASYNCHRONOUS = 2
+    SYNCHRONOUS = False
+    ASYNCHRONOUS = True
 
 class MoveParams:
     VELOCITY = 0.05
@@ -61,7 +61,6 @@ class Robot:
 
     def move_offset(self, offset, move_type):
         current_pose = self.get_pose()
-        self.delay()
         new_pose = [current_pose[i] + offset[i] for i in range(len(offset))]
         self.move_tcp(new_pose, move_type)
 
@@ -88,8 +87,21 @@ class Robot:
     
     def is_operation_done(self):
         status = self.get_async_status()
-        print(f'Async status: {status}')
         return status <= -1
     
     def stop(self):
         self.rtde_c.stopScript()
+
+if __name__ == '__main__':
+    control_ip = '192.168.0.100'
+    receive_ip = '192.168.0.100'
+    robot = Robot(control_ip, receive_ip)
+    robot.home()
+
+    pose = robot.get_pose()
+    print(f'Current pose: {pose}')
+
+    pose[TCP.X] -= 0.1
+    robot.move_tcp(pose, MoveType.SYNCHRONOUS)
+
+    robot.stop()
