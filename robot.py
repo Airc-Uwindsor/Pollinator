@@ -118,6 +118,8 @@ if __name__ == '__main__':
     pose = robot.get_pose()
     print(f'Current pose: {pose}')
 
-    robot.move_offset([0, 0, -0.05], MoveType.SYNCHRONOUS)
-
+    robot.move_offset([0, 0, -0.05], MoveType.ASYNCHRONOUS)
+    while not robot.is_operation_done():
+        robot.read_pose()
+        
     robot.stop()

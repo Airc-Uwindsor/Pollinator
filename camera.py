@@ -7,8 +7,8 @@ class Camera:
     RES_Y = 480
 
     # Field of view of the camera
-    FOV_X = 69.4
-    FOV_Y = 42.5
+    FOV_X = 61.6
+    FOV_Y = 43.3
 
     # RGB color of the target
     TARGET_COLOR = [240, 240, 20]
@@ -105,9 +105,9 @@ class Camera:
 
         print(f'Yaw: {yaw_rad}, Pitch: {pitch_rad}')
         # calculate the x, y, z coordinates of the target relative to the camera
-        x_offset = depth * np.cos(pitch_rad) * np.cos(yaw_rad)
-        y_offset = -depth * np.cos(pitch_rad) * np.sin(yaw_rad)
-        z_offset = depth * np.sin(pitch_rad)
+        x_offset = depth
+        y_offset = depth * np.tan(yaw_rad)
+        z_offset = depth * np.tan(pitch_rad)
 
         return [x_offset, y_offset, z_offset]
     
