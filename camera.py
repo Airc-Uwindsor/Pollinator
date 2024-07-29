@@ -6,6 +6,10 @@ class Camera:
     RES_X = 640
     RES_Y = 480
 
+    # Field of view of the camera
+    FOV_X = 69.4
+    FOV_Y = 42.5
+
     # RGB color of the target
     TARGET_COLOR = [240, 240, 20]
 
@@ -16,8 +20,8 @@ class Camera:
     FARTHEST = 3**(1/2) * 255
 
     def __init__(self):
-        self.pixel = None # last detected pixel
-        self.depth = None
+        # (x, y, depth) of each target found
+        self.targets = []
 
         self.pipeline = rs.pipeline()
         self.config = rs.config()
@@ -59,12 +63,21 @@ class Camera:
 
         # TODO: use YOLO image processing to find the target instead of color detection
         # pick a pixel and depth value for the target
-        pixel, depth = self.choose_random_target(old_target=False, target_array=target_array, depth_image=depth_image)
-        if pixel is not None and depth is not None:
-            self.pixel = pixel
-            self.depth = depth
+        self.compile_targets(target_array, depth_image)
 
         return color_image, target_array, depth_image
+    
+    def compile_targets(self, target_array, depth_image):
+        self.targets = []
+        # for each target in the target array, find the pixel and depth value
+        for y, row in enumerate(target_array):
+            for x, target in enumerate(row):
+                if target == 1:
+                    depth = depth_image[y, x]
+                    self.targets.append((x, y, depth))
+
+    def get_targets(self):
+        return self.targets
     
     def find_target(self, color_image):
         sensitivity = self.COLOR_SENSITIVITY / 100 * self.FARTHEST
@@ -80,33 +93,23 @@ class Camera:
         target_array[diff < sensitivity] = 1
 
         return target_array
-    
-    def choose_random_target(self, old_target=True, target_array=None, depth_image=None):
-        if old_target:
-            return self.pixel, self.depth
-        
-        target_indices = np.nonzero(target_array)
-        if len(target_indices[0]) == 0:
-            return None, None
-        
-        depth = 0
-        while depth == 0:
-            
-            target_index = np.random.randint(len(target_indices[0]))
-            y, x = target_indices[0][target_index], target_indices[1][target_index]
 
-            depth = depth_image[y, x] # TODO: weighted average of the depth values around the target pixel
-            
-        pixel = (int(x), int(y))
-        return pixel, depth
     
     def pixel_to_point(self, pixel, depth):
         x, y = pixel
-        z = depth
+        yaw = (x - self.RES_X / 2) * self.FOV_X / self.RES_X
+        pitch = -(y - self.RES_Y / 2) * self.FOV_Y / self.RES_Y
 
-        # Convert pixel to point
-        point = rs.rs2_deproject_pixel_to_point(self.intrinsics, [x, y], z)
-        return point
+        yaw_rad = np.radians(yaw)
+        pitch_rad = np.radians(pitch)
+
+        print(f'Yaw: {yaw_rad}, Pitch: {pitch_rad}')
+        # calculate the x, y, z coordinates of the target relative to the camera
+        x_offset = depth * np.cos(pitch_rad) * np.cos(yaw_rad)
+        y_offset = -depth * np.cos(pitch_rad) * np.sin(yaw_rad)
+        z_offset = depth * np.sin(pitch_rad)
+
+        return [x_offset, y_offset, z_offset]
     
     def display(self):
         color_image, target_array, depth_image = self.take_picture()
@@ -118,10 +121,6 @@ class Camera:
         # convert depth image to displayable image
         depth_visual = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
 
-        if self.pixel is not None:
-            # draw a circle around the target pixel for every image
-            for image in [color_image, target_image, depth_visual]:
-                cv2.circle(image, self.pixel, 10, (0, 0, 255), 2)
 
         # display images
         images = np.hstack((color_image, target_image, depth_visual))
@@ -131,8 +130,7 @@ class Camera:
         cv2.waitKey(1)
 
     def reset_target(self):
-        self.pixel = None
-        self.depth = None
+        self.targets = []
 
     def stop(self):
         self.pipeline.stop()
@@ -141,6 +139,7 @@ if __name__ == '__main__':
     import time
 
     camera = Camera()
-    while True:
-        camera.display()
-        time.sleep(0.3)
+    pixel = [camera.RES_X // 2, camera.RES_Y // 2]
+    depth = 800
+    point = camera.pixel_to_point(pixel, depth)
+    print(point)

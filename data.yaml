@@ -1,10 +1,9 @@
-path: tomato  # dataset root dir
-train: train/images  # train images (relative to 'path')
-val: valid/images  # val images (relative to 'path')
-test: test/images  # test images (optional)
+train: C:\Users\Ario\Desktop\RTDE Test\test project.v1i.yolov8\train\images
+val: C:\Users\Ario\Desktop\RTDE Test\test project.v1i.yolov8\valid\images
+test: C:\Users\Ario\Desktop\RTDE Test\test project.v1i.yolov8\test\images
 
 nc: 1
-names: ['tomato']  # class names
+names: ['1']
 
 roboflow:
   workspace: phuong-dam-gkpzn

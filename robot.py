@@ -1,6 +1,9 @@
 import rtde_control
 import rtde_receive
 import time
+import numpy as np
+
+HOME = [0, -90, -120, 30, 90, 0]
 
 class MoveType:
     SYNCHRONOUS = False
@@ -27,6 +30,7 @@ class Robot:
         self.rtde_r = rtde_receive.RTDEReceiveInterface(receive_ip)
         print('Receive interface connected')
 
+        self.pose = self.get_pose()
         # reset to home position
         self.read_pose()
         self.home()
@@ -36,7 +40,8 @@ class Robot:
     
     def home(self):
         print('Moving to home position')
-        home_pose = [-0.002, -1.572, -2.093, 0.524, 1.573, 0.0]
+        # convert to radians using np.deg2rad
+        home_pose = np.deg2rad(HOME)
         self.move_joints(home_pose, MoveType.SYNCHRONOUS)
         self.delay()
         self.read_pose()
@@ -50,28 +55,40 @@ class Robot:
     def is_joint_safe(self, joints):
         return self.rtde_c.isJointsWithinSafetyLimits(joints)
     
+    def is_offset_safe(self, offset, current_pose=None):
+        if current_pose is None:
+            current_pose = self.get_pose()
+        new_pose = current_pose.copy()
+        for i in range(len(offset)):
+            new_pose[i] += offset[i]
+        
+        return self.is_pose_safe(new_pose)
+    
     def move_tcp(self, new_pose, move_type):
         if not self.is_pose_safe(new_pose):
             self.stop()
             raise ValueError('New pose is not safe')
-        self.rtde_c.moveL(new_pose, MoveParams.VELOCITY, MoveParams.ACCELERATION, MoveType.ASYNCHRONOUS)
-        if move_type == MoveType.SYNCHRONOUS:
-            while not self.is_operation_done():
-                self.delay()
+        self.rtde_c.moveL(new_pose, MoveParams.VELOCITY, MoveParams.ACCELERATION, move_type)
+        # if move_type == MoveType.SYNCHRONOUS:
+        #     while not self.is_operation_done():
+        #         self.delay()
 
     def move_offset(self, offset, move_type):
         current_pose = self.get_pose()
-        new_pose = [current_pose[i] + offset[i] for i in range(len(offset))]
+        new_pose = current_pose.copy()
+        for i in range(len(offset)):
+            new_pose[i] += offset[i]
+        print(f'Moving to new pose: {new_pose}')
         self.move_tcp(new_pose, move_type)
 
     def move_joints(self, new_joints, move_type):
         if not self.is_joint_safe(new_joints):
             self.stop()
             raise ValueError('New joints are not safe')
-        self.rtde_c.moveJ(new_joints, MoveParams.VELOCITY, MoveParams.ACCELERATION, MoveType.ASYNCHRONOUS)
-        if move_type == MoveType.SYNCHRONOUS:
-            while not self.is_operation_done():
-                self.delay()
+        self.rtde_c.moveJ(new_joints, MoveParams.VELOCITY, MoveParams.ACCELERATION, move_type)
+        # if move_type == MoveType.SYNCHRONOUS:
+        #     while not self.is_operation_done():
+        #         self.delay()
 
     def read_pose(self):
         TCP_pose = self.get_pose()
@@ -101,7 +118,6 @@ if __name__ == '__main__':
     pose = robot.get_pose()
     print(f'Current pose: {pose}')
 
-    pose[TCP.X] -= 0.1
-    robot.move_tcp(pose, MoveType.SYNCHRONOUS)
+    robot.move_offset([0, 0, -0.05], MoveType.SYNCHRONOUS)
 
     robot.stop()
