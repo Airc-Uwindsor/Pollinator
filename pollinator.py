@@ -5,25 +5,16 @@ from camera import Camera
 import time
 from model import Model
 from vector import Vector
+from config import *
 
-PICTURE_COUNT = 5
-CAMERA_FRAMERATE = 2 # /s
-
-display = True
 
 class Pollinator:
     # Offset of the camera from the TCP
-    CAMERA_OFFSET = Vector(
-        0.12,
-        -0.0325,
-        -0.05
-    )
+    CAMERA_OFFSET = Vector(*CAMERA_OFFSET)
 
     def __init__(self):
-        control_ip = '192.168.0.100'
-        receive_ip = '192.168.0.100'
         self.camera = Camera()
-        self.robot = Robot(control_ip, receive_ip)
+        self.robot = Robot(CONTROL_IP, RECEIVE_IP)
         self.model = Model()
 
         # self.robot.home()
@@ -41,11 +32,13 @@ class Pollinator:
         for point in targets:
             self.move_to_target(point)
 
+            time.sleep(1)
+
             # TODO: make a path to avoid obstacles while moving to the target instead of moving home
             self.robot.home()
 
     def display(self, color_image, depth_image, targets):
-        if not display:
+        if not DISPLAY:
             return
         
         # TODO: put the displays in the same window
@@ -109,10 +102,9 @@ class Pollinator:
         for target in targets:
             center = target.center  
 
-            # get the depth within the bounding box
-            x1, y1, x2, y2 = target.xyxy
-            depths = depth_image[y1:y2, x1:x2]
-            depth = np.percentile(depths, 25)
+            # get the median of the depth values within a radius of the center
+            depths = depth_image[center[1] - 3: center[1] + 3, center[0] - 3: center[0] + 3]
+            depth = np.median(depths)
 
             if depth == 0:
                 continue

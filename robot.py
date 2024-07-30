@@ -2,9 +2,7 @@ import rtde_control
 import rtde_receive
 import time
 import numpy as np
-
-HOME_POSE = [0, -90, -120, 30, 90, 0]
-PICTURE_POSE = [0, 0, -45, -135, 90, 0]
+from config import *
 
 class MoveType:
     SYNCHRONOUS = False
@@ -41,7 +39,6 @@ class Robot:
         # convert to radians using np.deg2rad
         home_pose = np.deg2rad(HOME_POSE)
         self.move_joints(home_pose, MoveType.SYNCHRONOUS)
-        self.read_pose()
     
     def picture_pose(self):
         print('Moving to picture position')
