@@ -117,13 +117,14 @@ if __name__ == '__main__':
     control_ip = '192.168.0.100'
     receive_ip = '192.168.0.100'
     robot = Robot(control_ip, receive_ip)
-    robot.home()
+    robot.picture_pose()
+    # robot.home()
 
-    pose = robot.get_pose()
-    print(f'Current pose: {pose}')
+    # pose = robot.get_pose()
+    # print(f'Current pose: {pose}')
 
-    robot.move_offset([0, 0, -0.05], MoveType.ASYNCHRONOUS)
-    while not robot.is_operation_done():
-        robot.read_pose()
+    # robot.move_offset([0, 0, -0.05], MoveType.ASYNCHRONOUS)
+    # while not robot.is_operation_done():
+    #     robot.read_pose()
         
     robot.stop()

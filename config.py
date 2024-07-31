@@ -1,6 +1,9 @@
 
 # Number of pictures to be taken before pollination
-PICTURE_COUNT = 5
+PICTURE_COUNT = 10
+
+# Number of targets to be found before pollination
+TARGET_COUNT = 10
 
 # Display the images?
 DISPLAY = True
@@ -9,7 +12,7 @@ DISPLAY = True
 CAMERA_OFFSET = (
     0.12,
     -0.0325,
-    -0.05
+    -0.08
 )
 
 # IP addresses for the robot

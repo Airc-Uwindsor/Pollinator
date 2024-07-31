@@ -11,7 +11,7 @@ def main():
     # print("Webcam initialized")
 
     camera = Camera()
-    model = Model()
+    model = Model('best.pt')
 
     while True:
         color_image, depth_image = camera.take_picture()

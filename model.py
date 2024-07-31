@@ -3,8 +3,8 @@ import cv2
 from target import Target
 
 class Model:
-    def __init__(self):
-        self.model = YOLO("best.pt", verbose=False) # TODO: change name of model file
+    def __init__(self, model_file):
+        self.model = YOLO(model_file, verbose=False) # TODO: change name of model file
         print("Model loaded")
 
     def find_targets(self, frame):

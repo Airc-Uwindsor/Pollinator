@@ -15,7 +15,7 @@ class Pollinator:
     def __init__(self):
         self.camera = Camera()
         self.robot = Robot(CONTROL_IP, RECEIVE_IP)
-        self.model = Model()
+        self.model = Model('best.pt')
 
         # self.robot.home()
         
@@ -25,7 +25,6 @@ class Pollinator:
 
         # find target
         targets = self.find_targets()
-        print(f'Found {len(targets)} targets')
 
         self.robot.home()
         
@@ -58,11 +57,15 @@ class Pollinator:
         cv2.waitKey(1)
 
     def find_targets(self):
-        targets = []
 
-        while len(targets) < 5:
+        targets = []
+        # while len(targets) < TARGET_COUNT:
+        for _ in range(PICTURE_COUNT):
+            
             color_image, depth_image = self.camera.take_picture()
             targets = self.model.find_targets(color_image)
+
+            print(f'Found {len(targets)} targets (unfiltered)')
 
             # calculate the 3D positions of the targets relative to the camera
             # print('Calculating 3D positions')
@@ -74,10 +77,12 @@ class Pollinator:
             # print('Filtering out far targets')
             targets = self.filter_far_targets(targets)
 
-            for target in targets:
-                print(target)
+            print(f'Found {len(targets)} targets (filtered)')
 
-            # time.sleep(1)
+            # write targets to targets.txt (add new lines)
+            with open('targets.txt', 'a') as f:
+                for target in targets:
+                    f.write(f'{target.position}\n')
 
         # start at the target with the highest confidence and then move to the next target based on the 3D position
         target_order = []
