@@ -5,6 +5,7 @@ from camera import Camera
 import time
 from model import Model
 from vector import Vector
+from cluster import find_clusters
 from config import *
 
 
@@ -26,10 +27,14 @@ class Pollinator:
         # find target
         targets = self.find_targets()
 
+        if len(targets) == 0:
+            print('No targets found')
+            return
+
         self.robot.home()
         
         for point in targets:
-            self.move_to_target(point)
+            self.move_to_point(point)
 
             time.sleep(1)
 
@@ -60,50 +65,47 @@ class Pollinator:
 
         targets = []
         # while len(targets) < TARGET_COUNT:
-        for _ in range(PICTURE_COUNT):
+        for pic_num in range(PICTURE_COUNT):
+            # TODO: move/rotate camera between pictures to have more coverage and opportunities to find targets
             
             color_image, depth_image = self.camera.take_picture()
-            targets = self.model.find_targets(color_image)
+            new_targets = self.model.find_targets(color_image)
 
-            print(f'Found {len(targets)} targets (unfiltered)')
+            print(f'Picture {pic_num} - Targets Found: {len(new_targets)} (unfiltered)', end=' | ')
 
             # calculate the 3D positions of the targets relative to the camera
             # print('Calculating 3D positions')
-            targets = self.calculate_3d_positions(targets, depth_image)
+            new_targets = self.calculate_3d_positions(new_targets, depth_image)
 
-            self.display(color_image, depth_image, targets)
+            self.display(color_image, depth_image, new_targets)
 
             # filter out targets that are not reachable by the robot
             # print('Filtering out far targets')
-            targets = self.filter_far_targets(targets)
+            new_targets = self.filter_far_targets(new_targets)
 
-            print(f'Found {len(targets)} targets (filtered)')
+            print(f'{len(targets)} (filtered)')
 
-            # write targets to targets.txt (add new lines)
-            with open('targets.txt', 'a') as f:
-                for target in targets:
-                    f.write(f'{target.position}\n')
 
-        # start at the target with the highest confidence and then move to the next target based on the 3D position
-        target_order = []
+        # TODO: move order based on confidence
+        # cluster the targets
+        print(f'Found {len(targets)} targets, clustering...')
+        clusters = find_clusters([target.position.to_list() for target in targets], CLUSTER_DISTANCE)
+        print(f'Found {len(clusters)} clusters')
 
-        # add the target with the highest confidence to the target order
-        target_order.append(max(targets, key=lambda target: target.confidence))
-        targets.remove(target_order[0])
-
-        # TODO: use a better algorithm to order the targets
-        # add the next target to the target order based on the 3D position
-        while len(targets) > 0:
-            target_order.append(min(targets, key=lambda target: target.get_3d_distance(target_order[-1])))
-            targets.remove(target_order[-1])
+        # TODO: use an algorithm to order the targets
+        target_order = self.order_targets(clusters)
 
         return target_order
+    
+    def order_targets(self, clusters):
+        # temp return it in the same order
+        return clusters
 
     def calculate_3d_positions(self, targets, depth_image):
         current_pose = self.robot.get_pose()
+        rotation_vector = Vector(*current_pose[3:6])
         current_pose = Vector(*current_pose[0:3])
         new_targets = []
-        camera_vec = current_pose - self.CAMERA_OFFSET
         for target in targets:
             center = target.center  
 
@@ -117,8 +119,14 @@ class Pollinator:
             # vector from the camera to the target
             target_vec = self.camera.pixel_to_point(center, depth)
 
-            # from robot base to target
-            target_point = camera_vec + target_vec
+            # vector from the tcp to the target
+            target_vec -= self.CAMERA_OFFSET
+
+            # rotate the vector to the robot's frame of reference
+            target_vec = target_vec.undo_rotate(rotation_vector)
+
+            # add the current position of the robot to get the 3D position of the target
+            target_point = target_vec + current_pose
 
             target.set_3d_position(target_point)
 
@@ -129,20 +137,21 @@ class Pollinator:
     def filter_far_targets(self, targets):
         reachable_targets = []
 
+        forward_rotation_vector = [2.430, -2.408, 2.415]
+
         for target in targets:
             point = target.position.to_list()
+            print(f'Checking if target is reachable: {point}')
             # print(f'Checking if target is reachable: {point}')
-            if self.robot.is_pose_safe(point):
+            if self.robot.is_pose_safe(point + forward_rotation_vector):
                 reachable_targets.append(target)
 
         return reachable_targets
 
-    def move_to_target(self, target):
-        pose = target.position 
-        pose = pose.to_list()
-
-        print(f'Moving to target: {target.position}')
-        self.robot.move_tcp(pose, MoveType.SYNCHRONOUS)           
+    def move_to_point(self, point):
+        # TODO: go right before the target and take a picture to do fine adjustments 
+        print(f'Moving to target: {point}')
+        self.robot.move_tcp(point, MoveType.SYNCHRONOUS)           
 
     def run(self):
         print('Pollinator started')

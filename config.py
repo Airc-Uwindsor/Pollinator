@@ -5,6 +5,9 @@ PICTURE_COUNT = 10
 # Number of targets to be found before pollination
 TARGET_COUNT = 10
 
+# Cluster distance
+CLUSTER_DISTANCE = 0.02
+
 # Display the images?
 DISPLAY = True
 

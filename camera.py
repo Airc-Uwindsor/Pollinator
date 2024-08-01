@@ -37,9 +37,9 @@ class Camera:
 
         # print(f'Yaw: {yaw_rad}, Pitch: {pitch_rad}, depth: {depth}')
         # calculate the x, y, z coordinates of the target relative to the camera
-        x_offset = depth
-        y_offset = -depth * np.tan(yaw_rad)
-        z_offset = depth * np.tan(pitch_rad)
+        x_offset = depth * np.tan(yaw_rad)
+        y_offset = depth * np.tan(pitch_rad)
+        z_offset = depth
 
         return Vector(x_offset, y_offset, z_offset)
 
