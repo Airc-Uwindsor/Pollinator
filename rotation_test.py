@@ -3,17 +3,26 @@ import numpy as np
 
 pi = np.pi
 
-vec1 = Vector(1, 0, 0)
+goal = Vector(
+    0.12,
+    -0.0325,
+    -0.08
+)
+
+current = Vector(
+    0.0325,
+    0.08,
+    0.12
+)
 
 rx = -1.216
 ry = 1.205 
 rz = -1.209
 
-vec2 = vec1.rotate(rx, ry, rz)
+rotation_vector = Vector(rx, ry, rz)
 
-print(vec1)
-print(vec2)
+print(f'Goal: {goal}')
+print(f'Current: {current}')
 
-rx = 2.43
-ry = -2.408
-rz = 2.415
+goal = goal.undo_rotate(rotation_vector)
+print(f'Goal: {goal}')

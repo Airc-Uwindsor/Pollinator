@@ -41,6 +41,8 @@ class Camera:
         y_offset = depth * np.tan(pitch_rad)
         z_offset = depth
 
+        print(f'x: {x_offset}, y: {y_offset}, z: {z_offset}')
+
         return Vector(x_offset, y_offset, z_offset)
 
     def stop(self):
@@ -50,7 +52,7 @@ if __name__ == '__main__':
     import time
 
     camera = Camera()
-    pixel = [RES_X // 2, RES_Y // 2]
+    pixel = [0, 0]
     depth = 800
     point = camera.pixel_to_point(pixel, depth)
     print(point)

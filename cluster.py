@@ -35,19 +35,35 @@ class UnionFind:
         return clusters
 
 def find_clusters(coordinates, distance):
+    print(coordinates)
     uf = UnionFind()
 
     # Add each point to the union-find structure
-    for coordinate in coordinates:
-        uf.add(coordinate)
+    for i in range(len(coordinates)):
+        uf.add(i)
 
     # Perform union operations for points that are within the specified distance
     for i in range(len(coordinates)):
         for j in range(i + 1, len(coordinates)):
             if is_within_distance(coordinates[i], coordinates[j], distance):
-                uf.union(coordinates[i], coordinates[j])
+                uf.union(i, j)
 
-    return uf.get_clusters()
+    # calculate the cluster means
+    means = []
+    for root in uf.get_clusters():
+        xcoord = 0
+        ycoord = 0
+        zcoord = 0
+        cnt = 0
+        for index in uf.get_clusters()[root]:
+            point = coordinates[index]
+            xcoord += point[0]
+            ycoord += point[1]
+            zcoord += point[2]
+            cnt += 1
+        means.append([xcoord / cnt, ycoord / cnt, zcoord / cnt])
+
+    return means
 
 def is_within_distance(point1, point2, distance):
     return (abs(point1[0] - point2[0]) < distance and

@@ -67,6 +67,9 @@ class Robot:
         return self.is_pose_safe(new_pose)
     
     def move_tcp(self, new_pose, move_type):
+        if len(new_pose) == 3:
+            new_pose = new_pose + self.get_pose()[3:]
+        
         if not self.is_pose_safe(new_pose):
             self.stop()
             raise ValueError('New pose is not safe')
@@ -114,11 +117,7 @@ if __name__ == '__main__':
     control_ip = '192.168.0.100'
     receive_ip = '192.168.0.100'
     robot = Robot(control_ip, receive_ip)
-
-    robot.read_pose()
-    # robot.picture_pose()
-    robot.move_tcp([-0.162, -0.12963, 0.3879, 2.43, -2.408, 2.415], MoveType.SYNCHRONOUS)
-
+    robot.picture_pose()
     # robot.home()
 
     # pose = robot.get_pose()

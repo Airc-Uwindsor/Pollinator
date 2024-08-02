@@ -13,9 +13,12 @@ DISPLAY = True
 
 # Offset of the camera from the TCP
 CAMERA_OFFSET = (
-    0.12,
-    -0.0325,
-    -0.08
+    0.0325,
+    0.08,
+    0.12
+    # 0,
+    # 0,
+    # 0.14
 )
 
 # IP addresses for the robot

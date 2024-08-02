@@ -24,14 +24,15 @@ class Pollinator:
         # take a picture of the flowers
         self.robot.picture_pose()
 
-        # find target
+        # find targets
         targets = self.find_targets()
 
         if len(targets) == 0:
             print('No targets found')
             return
-
+        
         self.robot.home()
+
         
         for point in targets:
             self.move_to_point(point)
@@ -83,7 +84,9 @@ class Pollinator:
             # print('Filtering out far targets')
             new_targets = self.filter_far_targets(new_targets)
 
-            print(f'{len(targets)} (filtered)')
+            print(f'{len(new_targets)} (filtered)')
+
+            targets.extend(new_targets)
 
 
         # TODO: move order based on confidence
@@ -118,12 +121,12 @@ class Pollinator:
 
             # vector from the camera to the target
             target_vec = self.camera.pixel_to_point(center, depth)
-
+            
             # vector from the tcp to the target
             target_vec -= self.CAMERA_OFFSET
 
             # rotate the vector to the robot's frame of reference
-            target_vec = target_vec.undo_rotate(rotation_vector)
+            target_vec = target_vec.rotate(rotation_vector)
 
             # add the current position of the robot to get the 3D position of the target
             target_point = target_vec + current_pose
@@ -137,13 +140,9 @@ class Pollinator:
     def filter_far_targets(self, targets):
         reachable_targets = []
 
-        forward_rotation_vector = [2.430, -2.408, 2.415]
-
         for target in targets:
             point = target.position.to_list()
-            print(f'Checking if target is reachable: {point}')
-            # print(f'Checking if target is reachable: {point}')
-            if self.robot.is_pose_safe(point + forward_rotation_vector):
+            if self.robot.is_pose_safe(point):
                 reachable_targets.append(target)
 
         return reachable_targets
