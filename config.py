@@ -6,7 +6,7 @@ PICTURE_COUNT = 10
 TARGET_COUNT = 10
 
 # Cluster distance
-CLUSTER_DISTANCE = 0.02
+EPS = 0.02
 
 # Display the images?
 DISPLAY = True
@@ -46,3 +46,10 @@ HOME_POSE = [0, -90, -120, 30, 90, 0]
 
 # Picture position of the robot
 PICTURE_POSE = [0, 0, -45, -135, 90, 0]
+
+# Default rotation vector
+DEFAULT_ROTATION_VECTOR = [0, 0, 0] # TODO: fill in the default rotation vector
+
+# Move parameters
+VELOCITY = 0.05
+ACCELERATION = 1

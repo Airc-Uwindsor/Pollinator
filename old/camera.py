@@ -30,20 +30,29 @@ class Camera:
         x, y = pixel
         depth = depth/1000
         yaw = (x - RES_X / 2) * FOV_X / RES_X
-        pitch = (y - RES_Y / 2) * FOV_Y / RES_Y
+        pitch = -(y - RES_Y / 2) * FOV_Y / RES_Y
 
         yaw_rad = np.radians(yaw)
         pitch_rad = np.radians(pitch)
 
         # print(f'Yaw: {yaw_rad}, Pitch: {pitch_rad}, depth: {depth}')
+        # calculate the x, y, z coordinates of the target relative to the camera
         x_offset = depth * np.tan(yaw_rad)
         y_offset = depth * np.tan(pitch_rad)
         z_offset = depth
 
+        print(f'x: {x_offset}, y: {y_offset}, z: {z_offset}')
+
         return Vector(x_offset, y_offset, z_offset)
-    
+
     def stop(self):
         self.pipeline.stop()
 
 if __name__ == '__main__':
+    import time
+
     camera = Camera()
+    pixel = [0, 0]
+    depth = 800
+    point = camera.pixel_to_point(pixel, depth)
+    print(point)

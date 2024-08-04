@@ -4,167 +4,154 @@ from robot import Robot, MoveType
 from camera import Camera
 import time
 from model import Model
-from vector import Vector
+from vector import Vector, rpy_to_rotation_vector
 from cluster import find_clusters
+from path_order import order_path
 from config import *
-
 
 class Pollinator:
     # Offset of the camera from the TCP
-    CAMERA_OFFSET = Vector(*CAMERA_OFFSET)
 
     def __init__(self):
         self.camera = Camera()
         self.robot = Robot(CONTROL_IP, RECEIVE_IP)
         self.model = Model('best.pt')
 
-        # self.robot.home()
+        self.CAMERA_OFFSET = Vector(*CAMERA_OFFSET)
         
-    def pollinate(self):
-        # take a picture of the flowers
-        self.robot.picture_pose()
+    def rotate(self, roll, pitch, yaw):
+        '''Rotates the robot by the given angle'''
+        # Get the current pose
+        pose = self.robot.get_pose()
 
-        # find targets
-        targets = self.find_targets()
+        rotation_vector = rpy_to_rotation_vector(roll, pitch, yaw)
+        current_rotation = Vector(*pose[3:])
+        new_rotation = current_rotation + rotation_vector
 
-        if len(targets) == 0:
-            print('No targets found')
-            return
-        
-        self.robot.home()
+        # Move to the new pose
+        new_pose = pose[:3] + new_rotation.to_list()
+        self.robot.move_tcp(new_pose, MoveType.SYNCHRONOUS)
 
-        
-        for point in targets:
-            self.move_to_point(point)
-
-            time.sleep(1)
-
-            # TODO: make a path to avoid obstacles while moving to the target instead of moving home
-            self.robot.home()
-
-    def display(self, color_image, depth_image, targets):
-        if not DISPLAY:
-            return
-        
-        # TODO: put the displays in the same window
-
-        # left half of the screen is the color image with the bounding boxes, center, and confidence
-        # right half of the screen is the depth image
-        for target in targets:
-            x1, y1, x2, y2 = target.xyxy
-            cv2.rectangle(color_image, (x1, y1), (x2, y2), (0, 255, 0), 2)
-            cv2.putText(color_image, f'{target.confidence:.2f} | {target.position}', (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (36,255,12), 2)
-
-        cv2.imshow('Color Image', color_image)
-
-        # display the depth image
-        # cv2.imshow('Depth Image', depth_image)
-
-        cv2.waitKey(1)
-
-    def find_targets(self):
-
-        targets = []
-        # while len(targets) < TARGET_COUNT:
-        for pic_num in range(PICTURE_COUNT):
-            # TODO: move/rotate camera between pictures to have more coverage and opportunities to find targets
-            
-            color_image, depth_image = self.camera.take_picture()
-            new_targets = self.model.find_targets(color_image)
-
-            print(f'Picture {pic_num} - Targets Found: {len(new_targets)} (unfiltered)', end=' | ')
-
-            # calculate the 3D positions of the targets relative to the camera
-            # print('Calculating 3D positions')
-            new_targets = self.calculate_3d_positions(new_targets, depth_image)
-
-            self.display(color_image, depth_image, new_targets)
-
-            # filter out targets that are not reachable by the robot
-            # print('Filtering out far targets')
-            new_targets = self.filter_far_targets(new_targets)
-
-            print(f'{len(new_targets)} (filtered)')
-
-            targets.extend(new_targets)
-
-
-        # TODO: move order based on confidence
-        # cluster the targets
-        print(f'Found {len(targets)} targets, clustering...')
-        clusters = find_clusters([target.position.to_list() for target in targets], CLUSTER_DISTANCE)
-        print(f'Found {len(clusters)} clusters')
-
-        # TODO: use an algorithm to order the targets
-        target_order = self.order_targets(clusters)
-
-        return target_order
-    
-    def order_targets(self, clusters):
-        # temp return it in the same order
-        return clusters
-
-    def calculate_3d_positions(self, targets, depth_image):
+    def scan_for_targets(self):
+        '''Take a picture of the flowers and find the targets'''
+        # Get the current pose
         current_pose = self.robot.get_pose()
-        rotation_vector = Vector(*current_pose[3:6])
-        current_pose = Vector(*current_pose[0:3])
-        new_targets = []
-        for target in targets:
-            center = target.center  
+        current_offset = Vector(*current_pose[:3])
+        current_rotation_vector = Vector(*current_pose[3:])
+        
+        # Take a picture of the flowers
+        color_image, depth_image = self.camera.take_picture()
 
-            # get the median of the depth values within a radius of the center
-            depths = depth_image[center[1] - 3: center[1] + 3, center[0] - 3: center[0] + 3]
-            depth = np.median(depths)
+        # Find targets
+        targets = self.model.find_targets(color_image)
+        print(f'Found {len(targets)} targets')
+
+        target_positions = []
+        # Go through the targets and calculate the position in 3D space using the depth image
+        for target in targets:
+            center = target.center
+            depth = depth_image[center[1], center[0]]
 
             if depth == 0:
+                print(f'{target} has depth 0')
                 continue
 
-            # vector from the camera to the target
-            target_vec = self.camera.pixel_to_point(center, depth)
-            
-            # vector from the tcp to the target
-            target_vec -= self.CAMERA_OFFSET
+            # Vector from the camera to the target
+            cam_vec = self.camera.pixel_to_point(center, depth)
 
-            # rotate the vector to the robot's frame of reference
-            target_vec = target_vec.rotate(rotation_vector)
+            # Vector from the TCP to the target
+            tcp_vec = cam_vec - self.CAMERA_OFFSET
 
-            # add the current position of the robot to get the 3D position of the target
-            target_point = target_vec + current_pose
+            # Rotate the vector to the robot's orientation
+            tcp_vec = tcp_vec.undo_rotate(current_rotation_vector) # TODO: undo or rotate?
 
-            target.set_3d_position(target_point)
+            # Add the current offset to the vector
+            tcp_vec += current_offset
 
-            new_targets.append(target)
+            target_positions.append(tcp_vec.to_list())
 
-        return new_targets
-    
-    def filter_far_targets(self, targets):
-        reachable_targets = []
+        # TODO: display the image
+
+        return target_positions
+
+    def filter_targets(self, targets):
+        '''Filter out the targets that are too far away or unsafe'''
+        safe_targets = []
 
         for target in targets:
-            point = target.position.to_list()
-            if self.robot.is_pose_safe(point):
-                reachable_targets.append(target)
+            if self.robot.is_pose_safe(target):
+                safe_targets.append(target)
 
-        return reachable_targets
+        print(f'Found {len(safe_targets)} safe targets')
+        return safe_targets
+    
+    def vibrate(self):
+        '''Vibrates the robot to pollinate the flowers'''
+        # TODO
+        pass
 
-    def move_to_point(self, point):
-        # TODO: go right before the target and take a picture to do fine adjustments 
-        print(f'Moving to target: {point}')
-        self.robot.move_tcp(point, MoveType.SYNCHRONOUS)           
+    def pollinate(self):
+        '''Runs a cycle of pollination'''
+        self.robot.picture_pose()
 
-    def run(self):
-        print('Pollinator started')
+        # TODO: change position between pictures
+        targets = []
+        # Scan for targets
+        for pic in range(PICTURE_COUNT):
+            print(f'Picture {pic}')
+            targets += self.scan_for_targets()
 
-        try:
-            self.pollinate()
-        finally:
-            self.robot.stop()
+        # Filter out the targets that are too far away/unsafe
+        filtered_targets = self.filter_targets(targets)
 
+        # Cluster the targets
+        clusters = find_clusters(filtered_targets, EPS)
+
+        if len(clusters) == 0:
+            print('No targets found')
+            return
+
+        # Order the clusters
+        points = order_path(clusters)
+
+        # Home position
+        self.robot.home_pose()
+
+        # Move to the targets
+        for point in points:
+            # Move before the target
+            target = Vector(*point)
+            target -= Vector(0.05, 0, 0)
+            self.robot.move_tcp(target.to_list(), MoveType.SYNCHRONOUS)
+
+            # TODO: take picture and verify the target position
+
+            # Move to the target
+            self.robot.move_tcp(point, MoveType.SYNCHRONOUS)
+
+            # TODO: Pollinate
+            self.vibrate()
+
+    def drive(self):
+        '''Drives the robot forward to cover more area'''
+        # TODO
+        pass
+
+    def stop(self):
+        '''Stops the robot and camera'''
+        self.robot.stop()
         self.camera.stop()
 
-def main():
-    pollinator = Pollinator()
-    pollinator.run()
+    def run(self):
+        '''Runs the pollinator'''
+        self.pollinate()
+        self.drive()
+
+        self.stop()
+
+
+
 
 if __name__ == '__main__':
-    main()
+    pollinator = Pollinator()
+    pollinator.run()
