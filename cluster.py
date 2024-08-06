@@ -5,8 +5,12 @@ from vector import Vector
 from config import *
 
 def cluster(points):
+    print(f'Clustering {len(points)} points')
+    if len(points) == 0:
+        return []
+    
     # Run DBSCAN algorithm
-    db = DBSCAN(eps=EPS, min_samples=2).fit(points)
+    db = DBSCAN(eps=EPS, min_samples=1).fit(points)
     labels = db.labels_
 
     # Organize points by clusters
@@ -29,9 +33,7 @@ def calculate_centroids(clusters):
         centroids.append(centroid)
     return centroids
 
-def find_clusters(vectors):
-    # Convert list of vectors 
-    points = [v.to_list() for v in vectors]
+def find_clusters(points):
     clusters = cluster(points)
     centroids = calculate_centroids(clusters)
-    return [Vector(*centroid) for centroid in centroids]
+    return [centroid[:3].tolist() for centroid in centroids] # TODO: why is it 6d when the input is 3d

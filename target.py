@@ -9,3 +9,6 @@ class Target:
 
         x1, y1, x2, y2 = self.xyxy
         self.center = int((x1 + x2) / 2), int((y1 + y2) / 2)
+
+    def __repr__(self):
+        return f"Target(xyxy={self.xyxy}, confidence={self.confidence})"

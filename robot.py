@@ -25,27 +25,28 @@ class Robot:
         self.rtde_r = rtde_receive.RTDEReceiveInterface(receive_ip)
         print('Receive interface connected')
 
-    def home(self):
+    def home(self, async_move: bool = False):
         print('Moving to home position')
         home_pose = np.deg2rad(HOME_POSE)
-        self.move_joints(home_pose, MoveType.SYNCHRONOUS)
+        self.move_joints(home_pose, async_move)
 
-    def picture_pose(self):
-        print('Moving to picture position')
-        picture_pose = np.deg2rad(PICTURE_POSE)
-        self.move_joints(picture_pose, MoveType.SYNCHRONOUS)
+    def picture_pose(self, picture_number: int = 0, async_move: bool = False):
+        print(f'Moving to picture pose {picture_number}')
+        picture_number = picture_number % len(PICTURE_POSES)
+        picture_pose = np.deg2rad(PICTURE_POSES[picture_number])
+        self.move_joints(picture_pose, async_move)
 
     def get_pose(self):
         return self.rtde_r.getActualTCPPose()
     
     def clean_pose(self, pose: list):
         if len(pose) == 3:
-            pose += DEFAULT_ROTATION_VECTOR
+            return pose + DEFAULT_ROTATION_VECTOR
         return pose
     
     def is_pose_safe(self, pose: list):
-        pose = self.clean_pose(pose)
-        return self.rtde_c.isPoseWithinSafetyLimits(pose)
+        clean_pose = self.clean_pose(pose)
+        return self.rtde_c.isPoseWithinSafetyLimits(clean_pose)
     
     def is_joint_safe(self, joints: list):
         return self.rtde_c.isJointsWithinSafetyLimits(joints)
@@ -59,20 +60,22 @@ class Robot:
         return self.is_pose_safe(new_pose)
 
     def move_tcp(self, pose: list, move_type: bool):
-        pose = self.clean_pose(pose)
+        clean_pose = self.clean_pose(pose)
 
-        if not self.is_pose_safe(pose):
+        if not self.is_pose_safe(clean_pose):
             self.stop()
             raise ValueError('Pose is not safe')
+
+        print(f'Moving to pose: {clean_pose}')
         
-        self.rtde_c.moveL(pose, VELOCITY, ACCELERATION, move_type)
+        self.rtde_c.moveL(clean_pose, VELOCITY, ACCELERATION, move_type)
 
     def move_joints(self, joints: list, move_type: bool):
         if not self.is_joint_safe(joints):
             self.stop()
             raise ValueError('Joints are not safe')
         
-        self.rtde_c.moveJ(joints, VELOCITY, ACCELERATION, move_type)
+        self.rtde_c.moveJ(joints, VELOCITY*3, ACCELERATION, move_type)
 
     def read_pose(self):
         TCP_pose = self.get_pose()
@@ -88,7 +91,7 @@ class Robot:
     
     def is_operation_done(self):
         status = self.get_asynch_status()
-        return status <= -1 # TODO: Check this value
+        return status < 0
     
     def stop(self):
         self.rtde_c.stopScript()

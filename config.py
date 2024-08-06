@@ -1,6 +1,6 @@
 
 # Number of pictures to be taken before pollination
-PICTURE_COUNT = 10
+PICTURE_COUNT = 9
 
 # Number of targets to be found before pollination
 TARGET_COUNT = 10
@@ -14,11 +14,8 @@ DISPLAY = True
 # Offset of the camera from the TCP
 CAMERA_OFFSET = (
     0.0325,
-    0.08,
-    0.12
-    # 0,
-    # 0,
-    # 0.14
+    0.05,
+    0.15
 )
 
 # IP addresses for the robot
@@ -45,10 +42,21 @@ FOV_Y = 43.3
 HOME_POSE = [0, -90, -120, 30, 90, 0]
 
 # Picture position of the robot
-PICTURE_POSE = [0, 0, -45, -135, 90, 0]
+PICTURE_POSES = [
+    [-20, 0, -45, -135, 90, 0],
+    [-15, 0, -45, -135, 90, 0],
+    [-10, 0, -45, -135, 90, 0],
+    [-5, 0, -45, -135, 90, 0],
+    [0, 0, -45, -135, 90, 0],
+    [5, 0, -45, -135, 90, 0],
+    [10, 0, -45, -135, 90, 0],
+    [15, 0, -45, -135, 90, 0],
+    [20, 0, -45, -135, 90, 0]
+]
+    
 
 # Default rotation vector
-DEFAULT_ROTATION_VECTOR = [0, 0, 0] # TODO: fill in the default rotation vector
+DEFAULT_ROTATION_VECTOR = [2.4071581, -2.42914925, 2.41536115]
 
 # Move parameters
 VELOCITY = 0.05

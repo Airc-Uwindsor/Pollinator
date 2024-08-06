@@ -1,3 +1,4 @@
+import threading
 import cv2
 import numpy as np
 from robot import Robot, MoveType
@@ -13,35 +14,42 @@ class Pollinator:
     # Offset of the camera from the TCP
 
     def __init__(self):
-        self.camera = Camera()
-        self.robot = Robot(CONTROL_IP, RECEIVE_IP)
-        self.model = Model('best.pt')
+        self.camera = None
+        self.robot = None
+        self.model = None
+        
+        camera_thread = threading.Thread(target=self.init_camera)
+        robot_thread = threading.Thread(target=self.init_robot)
+        model_thread = threading.Thread(target=self.init_model)
+        
+        # Start all threads
+        camera_thread.start()
+        robot_thread.start()
+        model_thread.start()
+        
+        # Wait for all threads to complete
+        camera_thread.join()
+        robot_thread.join()
+        model_thread.join()
 
         self.CAMERA_OFFSET = Vector(*CAMERA_OFFSET)
+    
+    def init_camera(self):
+        self.camera = Camera()
         
-    def rotate(self, roll, pitch, yaw):
-        '''Rotates the robot by the given angle'''
-        # Get the current pose
-        pose = self.robot.get_pose()
+    def init_robot(self):
+        self.robot = Robot(CONTROL_IP, RECEIVE_IP)
+        
+    def init_model(self):
+        self.model = Model('best.pt')
 
-        rotation_vector = rpy_to_rotation_vector(roll, pitch, yaw)
-        current_rotation = Vector(*pose[3:])
-        new_rotation = current_rotation + rotation_vector
 
-        # Move to the new pose
-        new_pose = pose[:3] + new_rotation.to_list()
-        self.robot.move_tcp(new_pose, MoveType.SYNCHRONOUS)
-
-    def scan_for_targets(self):
+    def find_targets(self, current_pose, color_image, depth_image):
         '''Take a picture of the flowers and find the targets'''
         # Get the current pose
-        current_pose = self.robot.get_pose()
         current_offset = Vector(*current_pose[:3])
         current_rotation_vector = Vector(*current_pose[3:])
         
-        # Take a picture of the flowers
-        color_image, depth_image = self.camera.take_picture()
-
         # Find targets
         targets = self.model.find_targets(color_image)
         print(f'Found {len(targets)} targets')
@@ -52,8 +60,8 @@ class Pollinator:
             center = target.center
             depth = depth_image[center[1], center[0]]
 
-            if depth == 0:
-                print(f'{target} has depth 0')
+            if depth == 0: # TODO: why
+                # print(f'{target} has depth 0')
                 continue
 
             # Vector from the camera to the target
@@ -63,7 +71,7 @@ class Pollinator:
             tcp_vec = cam_vec - self.CAMERA_OFFSET
 
             # Rotate the vector to the robot's orientation
-            tcp_vec = tcp_vec.undo_rotate(current_rotation_vector) # TODO: undo or rotate?
+            tcp_vec = tcp_vec.rotate(current_rotation_vector)
 
             # Add the current offset to the vector
             tcp_vec += current_offset
@@ -82,30 +90,47 @@ class Pollinator:
             if self.robot.is_pose_safe(target):
                 safe_targets.append(target)
 
-        print(f'Found {len(safe_targets)} safe targets')
         return safe_targets
     
     def vibrate(self):
         '''Vibrates the robot to pollinate the flowers'''
         # TODO
-        pass
+        time.sleep(1)
+
+    def scan(self):
+        '''Scans the area for targets'''
+        self.robot.picture_pose(0, async_move=False)
+        print('Scanning the area')
+
+        targets = []
+        for pic in range(1, PICTURE_COUNT):
+            current_pose = self.robot.get_pose()
+            color_image, depth_image = self.camera.take_picture()
+            self.robot.picture_pose(pic, async_move=True)
+            targets += self.find_targets(current_pose, color_image, depth_image)
+
+            if not self.robot.is_operation_done():
+                time.sleep(0.05)
+
+        return targets
+
 
     def pollinate(self):
         '''Runs a cycle of pollination'''
-        self.robot.picture_pose()
 
-        # TODO: change position between pictures
-        targets = []
-        # Scan for targets
-        for pic in range(PICTURE_COUNT):
-            print(f'Picture {pic}')
-            targets += self.scan_for_targets()
+        # Take pictures of the flowers
+        targets = self.scan()
+
+        return
+
+        # Home position
+        self.robot.home(async_move=True)
 
         # Filter out the targets that are too far away/unsafe
         filtered_targets = self.filter_targets(targets)
 
         # Cluster the targets
-        clusters = find_clusters(filtered_targets, EPS)
+        clusters = find_clusters(filtered_targets)
 
         if len(clusters) == 0:
             print('No targets found')
@@ -114,15 +139,23 @@ class Pollinator:
         # Order the clusters
         points = order_path(clusters)
 
-        # Home position
-        self.robot.home_pose()
+        # Filter out the points that are too far away/unsafe
+        waypoints = self.filter_targets(points)
+
+        print(f'Found {len(waypoints)} waypoints')
+
+        # Wait until home position is reached
+        while not self.robot.is_operation_done():
+            time.sleep(0.1)
 
         # Move to the targets
-        for point in points:
+        for point in waypoints:
+            print(point)
             # Move before the target
             target = Vector(*point)
-            target -= Vector(0.05, 0, 0)
-            self.robot.move_tcp(target.to_list(), MoveType.SYNCHRONOUS)
+            offset = Vector(0.05, 0, 0.1)
+            target -= offset
+            # self.robot.move_tcp(target.to_list(), MoveType.SYNCHRONOUS)
 
             # TODO: take picture and verify the target position
 
@@ -155,3 +188,4 @@ class Pollinator:
 if __name__ == '__main__':
     pollinator = Pollinator()
     pollinator.run()
+    # pollinator.rotate(0.1, 0, 0)
