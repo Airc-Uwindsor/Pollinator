@@ -1,0 +1,14 @@
+{
+    "waypoint1":
+    {
+        "approach": ["x", "y", "z"],
+        "estimate": ["x", "y", "z"],
+        "departure": ["x", "y", "z"]
+    },
+    "waypoint2":
+    {
+        "approach": ["x", "y", "z"],
+        "estimate": ["x", "y", "z"],
+        "departure": ["x", "y", "z"]
+    }
+}

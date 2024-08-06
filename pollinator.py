@@ -94,26 +94,51 @@ class Pollinator:
     
     def vibrate(self):
         '''Vibrates the robot to pollinate the flowers'''
-        # TODO
+        # TODO async
         time.sleep(1)
 
     def scan(self):
         '''Scans the area for targets'''
-        self.robot.picture_pose(0, async_move=False)
-        print('Scanning the area')
-
+        
         targets = []
-        for pic in range(1, PICTURE_COUNT):
-            current_pose = self.robot.get_pose()
-            color_image, depth_image = self.camera.take_picture()
-            self.robot.picture_pose(pic, async_move=True)
-            targets += self.find_targets(current_pose, color_image, depth_image)
+        for pose_num in range(len(PICTURE_POSES)):
+            # Move to the picture position
+            self.robot.picture_pose(pose_num, async_move=False)
 
-            if not self.robot.is_operation_done():
-                time.sleep(0.05)
+            current_pose = self.robot.get_pose()
+
+            # Take pictures
+            for _ in range(PICTURE_COUNT):
+                color_image, depth_image = self.camera.take_picture()
+                new_targets = self.find_targets(current_pose, color_image, depth_image)
+                targets += new_targets
 
         return targets
 
+    def create_waypoints(self, targets):
+        '''Creates waypoints to reach the targets'''
+        # "waypoint1":
+        # {
+        #     "approach": ["x", "y", "z"],
+        #     "estimate": ["x", "y", "z"],
+        #     "departure": ["x", "y", "z"]
+        # }
+        waypoints = []
+
+        for target in targets:
+            target_vec = Vector(*target)
+
+            approach = target_vec + Vector(*APPROACH_OFFSET)
+            estimate = target_vec
+            departure = target_vec + Vector(*DEPARTURE_OFFSET)
+
+            waypoints.append({
+                "approach": approach.to_list(),
+                "estimate": estimate.to_list(),
+                "departure": departure.to_list()
+            })
+
+        return waypoints
 
     def pollinate(self):
         '''Runs a cycle of pollination'''
@@ -121,7 +146,11 @@ class Pollinator:
         # Take pictures of the flowers
         targets = self.scan()
 
-        return
+        # targets = []
+        # current_pose = self.robot.get_pose()
+        # for pic in range(PICTURE_COUNT):
+        #     color_image, depth_image = self.camera.take_picture()
+        #     targets += self.find_targets(current_pose, color_image, depth_image)
 
         # Home position
         self.robot.home(async_move=True)
@@ -137,33 +166,35 @@ class Pollinator:
             return
 
         # Order the clusters
-        points = order_path(clusters)
+        targets = order_path(clusters)
 
-        # Filter out the points that are too far away/unsafe
-        waypoints = self.filter_targets(points)
+        # Filter out the targets that are too far away/unsafe
+        points = self.filter_targets(targets)
 
-        print(f'Found {len(waypoints)} waypoints')
+        print(f'Found {len(points)} targets to pollinate')
+
+        # Create waypoints to reach the targets
+        waypoints = self.create_waypoints(points)
 
         # Wait until home position is reached
         while not self.robot.is_operation_done():
             time.sleep(0.1)
 
+        # TODO: blend between departure and approach of different points
         # Move to the targets
         for point in waypoints:
-            print(point)
-            # Move before the target
-            target = Vector(*point)
-            offset = Vector(0.05, 0, 0.1)
-            target -= offset
-            # self.robot.move_tcp(target.to_list(), MoveType.SYNCHRONOUS)
+            print(f'Moving to {point}')
 
-            # TODO: take picture and verify the target position
+            # Approach
+            self.robot.move_tcp(point['approach'], MoveType.SYNCHRONOUS)
+            time.sleep(1) # TODO: refine estimate
 
-            # Move to the target
-            self.robot.move_tcp(point, MoveType.SYNCHRONOUS)
-
-            # TODO: Pollinate
+            # Pollinate
+            self.robot.move_tcp(point['estimate'], MoveType.SYNCHRONOUS)
             self.vibrate()
+
+            # Depart
+            self.robot.move_tcp(point['departure'], MoveType.SYNCHRONOUS)
 
     def drive(self):
         '''Drives the robot forward to cover more area'''
@@ -178,6 +209,7 @@ class Pollinator:
     def run(self):
         '''Runs the pollinator'''
         self.pollinate()
+        self.robot.home()
         self.drive()
 
         self.stop()
