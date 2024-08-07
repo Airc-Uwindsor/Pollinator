@@ -1,6 +1,6 @@
 
 # Number of pictures to be taken per position
-PICTURE_COUNT = 5
+PICTURE_COUNT = 10
 
 # Cluster distance
 EPS = 0.02

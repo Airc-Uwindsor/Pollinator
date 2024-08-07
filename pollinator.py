@@ -174,7 +174,7 @@ class Pollinator:
         print(f'Found {len(points)} targets to pollinate')
 
         # Create waypoints to reach the targets
-        waypoints = self.create_waypoints(points)
+        waypoints = self.create_waypoints(points) # TODO: create a path using bezier curves to smooth out the motion
 
         # Wait until home position is reached
         while not self.robot.is_operation_done():

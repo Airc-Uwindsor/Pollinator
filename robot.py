@@ -96,11 +96,11 @@ class Robot:
     def stop(self):
         self.rtde_c.stopScript()
 
-
-
-
 if __name__ == '__main__':
-    robot = Robot(CONTROL_IP, RECEIVE_IP)
+    control_ip = '192.168.0.101'
+    receive_ip = '192.168.0.101'
+
+    robot = Robot(control_ip, receive_ip)
 
     robot.picture_pose()
     robot.read_pose()
