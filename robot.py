@@ -1,3 +1,5 @@
+# https://sdurobotics.gitlab.io/ur_rtde/api/api.html
+
 import rtde_control
 import rtde_receive
 import time
@@ -26,32 +28,39 @@ class Robot:
         print('Receive interface connected')
 
     def home(self, async_move: bool = False):
+        '''Move the robot to the home position'''
         print('Moving to home position')
         home_pose = np.deg2rad(HOME_POSE)
         self.move_joints(home_pose, async_move)
 
     def picture_pose(self, picture_number: int = 0, async_move: bool = False):
+        '''Move the robot to the picture pose'''
         print(f'Moving to picture pose {picture_number}')
         picture_number = picture_number % len(PICTURE_POSES)
         picture_pose = np.deg2rad(PICTURE_POSES[picture_number])
         self.move_joints(picture_pose, async_move)
 
     def get_pose(self):
+        '''Get the current TCP pose of the robot'''
         return self.rtde_r.getActualTCPPose()
     
     def clean_pose(self, pose: list):
+        '''Clean the pose by adding the default rotation vector if it is not provided'''
         if len(pose) == 3:
             return pose + DEFAULT_ROTATION_VECTOR
         return pose
     
     def is_pose_safe(self, pose: list):
+        '''Check if the pose is within the safety limits'''
         clean_pose = self.clean_pose(pose)
         return self.rtde_c.isPoseWithinSafetyLimits(clean_pose)
     
     def is_joint_safe(self, joints: list):
+        '''Check if the joints are within the safety limits'''
         return self.rtde_c.isJointsWithinSafetyLimits(joints)
     
     def is_offset_safe(self, offset: list):
+        '''Check if the offset is safe to move'''
         current_pose = self.get_pose()
         new_pose = current_pose.copy()
         for i in range(len(offset)):
@@ -60,8 +69,10 @@ class Robot:
         return self.is_pose_safe(new_pose)
 
     def move_tcp(self, pose: list, move_type: bool):
+        '''Move the robot to the given TCP pose'''
         clean_pose = self.clean_pose(pose)
 
+        # Check if the pose is safe
         if not self.is_pose_safe(clean_pose):
             self.stop()
             raise ValueError('Pose is not safe')
@@ -71,6 +82,9 @@ class Robot:
         self.rtde_c.moveL(clean_pose, VELOCITY, ACCELERATION, move_type)
 
     def move_joints(self, joints: list, move_type: bool):
+        '''Move the robot to the given joint pose'''
+
+        # Check if the joints are safe
         if not self.is_joint_safe(joints):
             self.stop()
             raise ValueError('Joints are not safe')
@@ -78,6 +92,8 @@ class Robot:
         self.rtde_c.moveJ(joints, VELOCITY*3, ACCELERATION, move_type)
 
     def read_pose(self):
+        '''Read the current TCP and joint pose of the robot'''
+
         TCP_pose = self.get_pose()
         cleaned_pose = [round(i, 3) for i in TCP_pose]
 
@@ -87,6 +103,9 @@ class Robot:
         print(f'Current TCP Pose: {cleaned_pose}\tCurrent Joint Pose: {cleaned_joint_pose}')
 
     def get_asynch_status(self):
+        '''Get the status of the asynchronous operation'''
+        # < 0: Operation done / No operation
+        # 0: Operation in progress
         return self.rtde_c.getAsyncOperationProgress()
     
     def is_operation_done(self):

@@ -83,4 +83,4 @@ def rpy_to_rotation_vector(roll, pitch, yaw):
         rotation_vector = r * theta
         return Vector(*rotation_vector)
     else:
-        return Vector(0, 0, 0)
+        return Vector(0, 0, 0) # No rotation
