@@ -1,10 +1,8 @@
 # https://sdurobotics.gitlab.io/ur_rtde/api/api.html
 
+import threading
 import rtde_control
 import rtde_receive
-import time
-import numpy as np
-from config import *
 
 class MoveType:
     SYNCHRONOUS = False
@@ -18,27 +16,35 @@ class TCP:
     RY = 4
     RZ = 5
 
+DEFAULT_ROTATION_VECTOR = [2.4071581, -2.42914925, 2.41536115]
+
 class Robot:
-    def __init__(self, control_ip: str, receive_ip: str):
+    def __init__(self, control_ip: str, receive_ip: str, velocity: float = 0.075, acceleration: float = 0.5):
         # Connect to the RTDE interface
         print(f'Connecting to control IP: {control_ip} and receive IP: {receive_ip}')
-        self.rtde_c = rtde_control.RTDEControlInterface(control_ip)
+        self.control_ip = control_ip
+        self.receive_ip = receive_ip
+
+        self.velocity = velocity
+        self.acceleration = acceleration
+
+        # Initialize the control and receive interfaces
+        control_thread = threading.Thread(target=self.init_control)
+        receive_thread = threading.Thread(target=self.init_receive)
+
+        control_thread.start()
+        receive_thread.start()
+
+        control_thread.join()
+        receive_thread.join()
+
+    def init_control(self):
+        self.rtde_c = rtde_control.RTDEControlInterface(self.control_ip)
         print('Control interface connected')
-        self.rtde_r = rtde_receive.RTDEReceiveInterface(receive_ip)
+
+    def init_receive(self):
+        self.rtde_r = rtde_receive.RTDEReceiveInterface(self.receive_ip)
         print('Receive interface connected')
-
-    def home(self, async_move: bool = False):
-        '''Move the robot to the home position'''
-        print('Moving to home position')
-        home_pose = np.deg2rad(HOME_POSE)
-        self.move_joints(home_pose, async_move)
-
-    def picture_pose(self, picture_number: int = 0, async_move: bool = False):
-        '''Move the robot to the picture pose'''
-        print(f'Moving to picture pose {picture_number}')
-        picture_number = picture_number % len(PICTURE_POSES)
-        picture_pose = np.deg2rad(PICTURE_POSES[picture_number])
-        self.move_joints(picture_pose, async_move)
 
     def get_pose(self):
         '''Get the current TCP pose of the robot'''
@@ -79,7 +85,7 @@ class Robot:
 
         print(f'Moving to pose: {clean_pose}')
         
-        self.rtde_c.moveL(clean_pose, VELOCITY, ACCELERATION, move_type)
+        self.rtde_c.moveL(clean_pose, self.velocity, self.acceleration, move_type)
 
     def move_joints(self, joints: list, move_type: bool):
         '''Move the robot to the given joint pose'''
@@ -89,7 +95,7 @@ class Robot:
             self.stop()
             raise ValueError('Joints are not safe')
         
-        self.rtde_c.moveJ(joints, VELOCITY*3, ACCELERATION, move_type)
+        self.rtde_c.moveJ(joints, self.velocity*3, self.acceleration, move_type)
 
     def read_pose(self):
         '''Read the current TCP and joint pose of the robot'''
@@ -116,11 +122,22 @@ class Robot:
         self.rtde_c.stopScript()
 
 if __name__ == '__main__':
-    control_ip = '192.168.0.101'
-    receive_ip = '192.168.0.101'
+    control_ip = '192.168.0.100'
+    receive_ip = '192.168.0.100'
 
+    # Initialize the robot
     robot = Robot(control_ip, receive_ip)
 
-    robot.picture_pose()
-    robot.read_pose()
+    # Get the initial TCP pose - [x, y, z, rx, ry, rz]
+    init_pose = robot.get_pose()
+    print(f'Initial TCP Pose: {init_pose}')
+
+    new_pose = init_pose.copy()
+    new_pose[TCP.X] += 0.1 # Move 10 cm in the x direction
+    robot.move_tcp(new_pose, MoveType.SYNCHRONOUS)
+
+    # Move back to the initial pose
+    robot.move_tcp(init_pose, MoveType.SYNCHRONOUS)
+
+    # Stop the robot
     robot.stop()

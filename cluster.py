@@ -4,7 +4,7 @@ from collections import defaultdict
 from vector import Vector
 from config import *
 
-def cluster(points):
+def cluster(points): # TODO: rewrite
     print(f'Clustering {len(points)} points')
     if len(points) == 0:
         return []

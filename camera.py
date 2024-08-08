@@ -1,7 +1,6 @@
 import pyrealsense2 as rs
 import numpy as np
-from vector import Vector
-from config import *
+from config import RES_X, RES_Y
 
 class Camera:
     def __init__(self):
@@ -25,22 +24,6 @@ class Camera:
         depth_image = np.asanyarray(depth_frame.get_data())
 
         return color_image, depth_image
-    
-    def pixel_to_point(self, pixel, depth):
-        x, y = pixel
-        depth = depth/1000
-        yaw = (x - RES_X / 2) * FOV_X / RES_X
-        pitch = (y - RES_Y / 2) * FOV_Y / RES_Y
-
-        yaw_rad = np.radians(yaw)
-        pitch_rad = np.radians(pitch)
-
-        # print(f'Yaw: {yaw_rad}, Pitch: {pitch_rad}, depth: {depth}')
-        x_offset = depth * np.tan(yaw_rad)
-        y_offset = depth * np.tan(pitch_rad)
-        z_offset = depth
-
-        return Vector(x_offset, y_offset, z_offset)
     
     def stop(self):
         self.pipeline.stop()
