@@ -4,10 +4,6 @@ import threading
 import rtde_control
 import rtde_receive
 
-class MoveType:
-    SYNCHRONOUS = False
-    ASYNCHRONOUS = True
-
 class TCP:
     X = 0
     Y = 1
@@ -134,10 +130,10 @@ if __name__ == '__main__':
 
     new_pose = init_pose.copy()
     new_pose[TCP.X] += 0.1 # Move 10 cm in the x direction
-    robot.move_tcp(new_pose, MoveType.SYNCHRONOUS)
+    robot.move_tcp(new_pose, async_move=False)
 
     # Move back to the initial pose
-    robot.move_tcp(init_pose, MoveType.SYNCHRONOUS)
+    robot.move_tcp(init_pose, async_move=False)
 
     # Stop the robot
     robot.stop()
