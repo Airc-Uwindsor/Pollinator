@@ -1,12 +1,13 @@
 import threading
 import numpy as np
-from robot import Robot
+from robot import TCP, Robot
 from camera import Camera
 import time
 from model import Model
 from cluster import find_clusters
 from path_order import order_path
 from frame import Frame
+import json
 from config import *
 
 class Pollinator:
@@ -31,15 +32,29 @@ class Pollinator:
         robot_thread.join()
         model_thread.join()
 
+        # Wait for the robot to reach the picture pose
+        self.wait_for_operation()
+
     def init_camera(self):
         self.camera = Camera()
+
+        # Warm up the camera
+        for i in range(5):
+            self.camera.take_picture()
+
+        # Take an initial picture
+        color_image, depth_image = self.camera.take_picture()
+        self.frames = [Frame(color_image, depth_image, self.robot.get_pose())]
         
     def init_robot(self):
-        self.robot = Robot(CONTROL_IP, RECEIVE_IP)
+        self.robot = Robot(CONTROL_IP, RECEIVE_IP, velocity=0.1, acceleration=0.5)
+
+        # Move to picture pose
+        self.picture_pose(async_move=True)
         
     def init_model(self):
-        self.model = Model('models/best.pt')
-    
+        self.model = Model('models/1000_32.pt')
+
     def vibrate(self):
         '''Vibrates the robot to pollinate the flowers'''
         # TODO async
@@ -49,6 +64,11 @@ class Pollinator:
         '''Drives the robot forward to cover more area'''
         # TODO
         pass
+
+    def wait_for_operation(self):
+        '''Waits for the robot to finish the current operation'''
+        while not self.robot.is_operation_done():
+            time.sleep(0.1)
 
     def home(self, async_move: bool = False):
         '''Moves the robot to the home position'''
@@ -74,7 +94,7 @@ class Pollinator:
 
     def scan(self):
         '''Scans the area and takes pictures of the flowers'''
-        self.frames = []
+        self.frames = self.frames[-1:] # Keep the last frame
         
         # Take pictures of the flowers
         for pos_num in range(len(PICTURE_POSES)):
@@ -90,6 +110,12 @@ class Pollinator:
 
                 self.frames.append(frame)
 
+    def get_latest_frame(self):
+        '''Returns the latest frame'''
+        color_image = self.frames[-1].color_image
+        depth_image = self.frames[-1].depth_image
+        return color_image, depth_image
+
     def pollinate(self):
         '''Runs a cycle of pollination'''
 
@@ -101,7 +127,7 @@ class Pollinator:
 
         # Find the targets in the pictures taken
         targets = []
-        for frame in self.frames: # TODO: run target finding in parallel?
+        for frame in self.frames[1:]: # Skip the first frame
             targets += frame.find_targets(self.model)
 
         filtered_targets = self.filter_targets(targets)
@@ -111,7 +137,7 @@ class Pollinator:
             return
 
         # Cluster the targets
-        clusters = find_clusters(filtered_targets)
+        clusters = find_clusters(filtered_targets, EPS)
         print(f'Found {len(clusters)} clusters')
 
         points = self.filter_targets(clusters)
@@ -122,14 +148,32 @@ class Pollinator:
         print(f'Found {len(points)} targets to pollinate')
 
         # Wait until home position is reached
-        while not self.robot.is_operation_done():
-            time.sleep(0.1)
+        self.wait_for_operation()
 
         for point in path:
             print(f'Moving to {point}')
 
+            # Back
+            back = point.copy()
+            back[TCP.X] -= 0.03
+            self.robot.move_tcp(back)
+
             # Move to the point
             self.robot.move_tcp(point)
+
+            # Pollinate
+            self.vibrate()
+
+            # Back
+            self.robot.move_tcp(back)
+
+    def step_back(self):
+        '''Steps back to the previous position'''
+        current_pose = self.robot.get_pose()
+        new_pose = current_pose.copy()
+        new_pose[TCP.X] -= 0.1
+
+        self.robot.move_tcp(new_pose)
 
     def stop(self):
         '''Stops the robot and camera'''
@@ -139,16 +183,18 @@ class Pollinator:
     def run(self):
         '''Runs the pollinator'''
         self.pollinate()
-        self.home()
+        # self.step_back()
+        # self.home()
         self.drive()
 
 
 
+def main():
+    pollinator = Pollinator()
+    for i in range(20):
+        pollinator.run()
 
+    pollinator.stop()
 
 if __name__ == '__main__':
-    pollinator = Pollinator()
-    for i in range(2):
-        pollinator.run()
-        
-    pollinator.stop()
+    main()

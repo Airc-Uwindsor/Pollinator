@@ -15,7 +15,7 @@ class TCP:
 DEFAULT_ROTATION_VECTOR = [2.4071581, -2.42914925, 2.41536115]
 
 class Robot:
-    def __init__(self, control_ip: str, receive_ip: str, velocity: float = 0.075, acceleration: float = 0.5):
+    def __init__(self, control_ip: str, receive_ip: str, velocity: float = 0.05, acceleration: float = 0.5):
         # Connect to the RTDE interface
         print(f'Connecting to control IP: {control_ip} and receive IP: {receive_ip}')
         self.control_ip = control_ip
@@ -70,7 +70,7 @@ class Robot:
 
         return self.is_pose_safe(new_pose)
 
-    def move_tcp(self, pose: list, move_type: bool):
+    def move_tcp(self, pose: list, async_move: bool = False, verbose: bool = True):
         '''Move the robot to the given TCP pose'''
         clean_pose = self.clean_pose(pose)
 
@@ -79,11 +79,12 @@ class Robot:
             self.stop()
             raise ValueError('Pose is not safe')
 
-        print(f'Moving to pose: {clean_pose}')
+        if verbose:
+            print(f'Moving to pose: {clean_pose}')
         
-        self.rtde_c.moveL(clean_pose, self.velocity, self.acceleration, move_type)
+        self.rtde_c.moveL(clean_pose, self.velocity, self.acceleration, async_move)
 
-    def move_joints(self, joints: list, move_type: bool):
+    def move_joints(self, joints: list, async_move: bool = False):
         '''Move the robot to the given joint pose'''
 
         # Check if the joints are safe
@@ -91,7 +92,7 @@ class Robot:
             self.stop()
             raise ValueError('Joints are not safe')
         
-        self.rtde_c.moveJ(joints, self.velocity*3, self.acceleration, move_type)
+        self.rtde_c.moveJ(joints, self.velocity*3, self.acceleration, async_move)
 
     def read_pose(self):
         '''Read the current TCP and joint pose of the robot'''
@@ -122,18 +123,20 @@ if __name__ == '__main__':
     receive_ip = '192.168.0.100'
 
     # Initialize the robot
-    robot = Robot(control_ip, receive_ip)
+    robot = Robot(control_ip, receive_ip, velocity=0.025, acceleration=0.5)
 
     # Get the initial TCP pose - [x, y, z, rx, ry, rz]
     init_pose = robot.get_pose()
     print(f'Initial TCP Pose: {init_pose}')
 
     new_pose = init_pose.copy()
-    new_pose[TCP.X] += 0.1 # Move 10 cm in the x direction
-    robot.move_tcp(new_pose, async_move=False)
+    new_pose[TCP.Z] += 0.05 # Move 5 cm in the x direction
+    print('Moving Forward')
+    robot.move_tcp(new_pose, async_move=False, verbose=True)
 
     # Move back to the initial pose
-    robot.move_tcp(init_pose, async_move=False)
+    print('Moving Back')
+    robot.move_tcp(init_pose, async_move=False, verbose=True)
 
     # Stop the robot
     robot.stop()

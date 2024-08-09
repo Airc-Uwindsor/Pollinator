@@ -11,7 +11,7 @@ def main():
     # print("Webcam initialized")
 
     camera = Camera()
-    model = Model('yolo.pt')
+    model = Model('models/1000_32.pt')
 
     while True:
         color_image, depth_image = camera.take_picture()
@@ -21,6 +21,10 @@ def main():
         
         annotated_frame = results[0].plot()
 
+
+        # print center of depth image
+        print(depth_image[240, 320])
+        
         cv2.imshow('Annotated Frame', annotated_frame)
         cv2.waitKey(1)
 

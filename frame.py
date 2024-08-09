@@ -62,7 +62,7 @@ class Frame:
 
             target_positions.append(target_position.to_list())
 
-            print(f'Found target at {target_position.to_list()}')
+            # print(f'Found target at {target_position.to_list()}')
         
         print(f'Found {len(target_positions)} targets')
 
