@@ -7,7 +7,6 @@ from model import Model
 from cluster import find_clusters
 from path_order import order_path
 from frame import Frame
-import json
 from config import *
 
 class Pollinator:
@@ -36,7 +35,7 @@ class Pollinator:
         self.wait_for_operation()
 
     def init_camera(self):
-        self.camera = Camera()
+        self.camera = Camera(resolution=(RES_X, RES_Y))
 
         # Warm up the camera
         for i in range(5):
@@ -56,8 +55,8 @@ class Pollinator:
         self.model = Model('models/1000_32.pt')
 
     def vibrate(self):
-        '''Vibrates the robot to pollinate the flowers'''
-        # TODO async
+        '''Vibrates the brush to pollinate the flowers'''
+        # TODO
         time.sleep(1)
 
     def drive(self):
@@ -122,22 +121,20 @@ class Pollinator:
         # Take pictures of the flowers
         self.scan()
 
-        # Home position
-        self.home(async_move=True)
+        # Home position # TODO: uncomment
+        # self.home(async_move=True)
 
         # Find the targets in the pictures taken
         targets = []
         for frame in self.frames[1:]: # Skip the first frame
             targets += frame.find_targets(self.model)
 
-        filtered_targets = self.filter_targets(targets)
-
-        if len(filtered_targets) == 0:
+        if len(targets) == 0:
             print('No targets found')
             return
 
         # Cluster the targets
-        clusters = find_clusters(filtered_targets, EPS)
+        clusters = find_clusters(targets, EPS)
         print(f'Found {len(clusters)} clusters')
 
         points = self.filter_targets(clusters)
@@ -147,25 +144,25 @@ class Pollinator:
 
         print(f'Found {len(points)} targets to pollinate')
 
+        return
+
         # Wait until home position is reached
         self.wait_for_operation()
 
         for point in path:
-            print(f'Moving to {point}')
-
             # Back
             back = point.copy()
             back[TCP.X] -= 0.03
-            self.robot.move_tcp(back)
+            self.robot.move_tcp(back, verbose=False)
 
             # Move to the point
-            self.robot.move_tcp(point)
+            self.robot.move_tcp(point, verbose=False)
 
             # Pollinate
             self.vibrate()
 
             # Back
-            self.robot.move_tcp(back)
+            self.robot.move_tcp(back, verbose=False)
 
     def step_back(self):
         '''Steps back to the previous position'''
@@ -191,7 +188,7 @@ class Pollinator:
 
 def main():
     pollinator = Pollinator()
-    for i in range(20):
+    for i in range(5):
         pollinator.run()
 
     pollinator.stop()

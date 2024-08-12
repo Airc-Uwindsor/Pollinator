@@ -1,8 +1,7 @@
-# https://sdurobotics.gitlab.io/ur_rtde/api/api.html
-
 import threading
 import rtde_control
 import rtde_receive
+# https://sdurobotics.gitlab.io/ur_rtde/api/api.html
 
 class TCP:
     X = 0
@@ -118,7 +117,7 @@ class Robot:
     def stop(self):
         self.rtde_c.stopScript()
 
-if __name__ == '__main__':
+def main():
     control_ip = '192.168.0.100'
     receive_ip = '192.168.0.100'
 
@@ -140,3 +139,7 @@ if __name__ == '__main__':
 
     # Stop the robot
     robot.stop()
+
+
+if __name__ == '__main__':
+    main()

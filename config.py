@@ -1,5 +1,5 @@
 # Number of pictures to take per position 
-PICTURE_COUNT = 3
+PICTURE_COUNT = 5
 
 # Maximum distance between two points in a cluster
 EPS = 0.02
@@ -38,9 +38,9 @@ HOME_POSE = [0, -90, -120, 30, 90, 0]
 
 # Picture position of the robot
 PICTURE_POSES = [
-    [-10, 0, -45, -135, 90, 0],
+    # [-10, 0, -45, -135, 90, 0],
     [-5, 0, -45, -135, 90, 0],
     [0, 0, -45, -135, 90, 0],
     [5, 0, -45, -135, 90, 0],
-    [10, 0, -45, -135, 90, 0],
+    # [10, 0, -45, -135, 90, 0],
 ]
