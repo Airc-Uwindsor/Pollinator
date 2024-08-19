@@ -57,7 +57,7 @@ class Pollinator:
     def vibrate(self):
         '''Vibrates the brush to pollinate the flowers'''
         # TODO
-        time.sleep(1)
+        time.sleep(5)
 
     def drive(self):
         '''Drives the robot forward to cover more area'''
@@ -122,7 +122,7 @@ class Pollinator:
         self.scan()
 
         # Home position # TODO: uncomment
-        # self.home(async_move=True)
+        self.home(async_move=True)
 
         # Find the targets in the pictures taken
         targets = []
@@ -144,16 +144,14 @@ class Pollinator:
 
         print(f'Found {len(points)} targets to pollinate')
 
-        return
-
         # Wait until home position is reached
         self.wait_for_operation()
 
         for point in path:
             # Back
-            back = point.copy()
-            back[TCP.X] -= 0.03
-            self.robot.move_tcp(back, verbose=False)
+            # back = point.copy()
+            # back[TCP.X] -= 0.03
+            # self.robot.move_tcp(back, verbose=False)
 
             # Move to the point
             self.robot.move_tcp(point, verbose=False)
@@ -162,7 +160,7 @@ class Pollinator:
             self.vibrate()
 
             # Back
-            self.robot.move_tcp(back, verbose=False)
+            # self.robot.move_tcp(back, verbose=False)
 
     def step_back(self):
         '''Steps back to the previous position'''
