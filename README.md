@@ -2,6 +2,11 @@
 ## Goal
 The goal of the pollinator is to pollinate the flowers in a precise and optimized manner. 
 
+## Running the Pollinator with Python
+1. Configure the robot’s network settings by changing the IP address
+2. Configure the computer's network setting corresponding to the robot's netwrok 
+3. Ensure the required version (3.9.1) of Python is installed
+
 ## Ideation
 - Used the process of test, train, valid for training the robot to detect flowers
 - Used realsense and opencv to calculate depth of the target flowers
