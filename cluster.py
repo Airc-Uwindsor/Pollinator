@@ -4,7 +4,7 @@ from collections import defaultdict
 from vector import Vector
 from config import *
 
-def cluster(points, eps): # TODO: rewrite
+def cluster(points, eps):
     print(f'Clustering {len(points)} points')
     if len(points) == 0:
         return []
@@ -36,4 +36,4 @@ def calculate_centroids(clusters):
 def find_clusters(points, eps):
     clusters = cluster(points, eps)
     centroids = calculate_centroids(clusters)
-    return [centroid[:3].tolist() for centroid in centroids] # TODO: why is it 6d when the input is 3d
+    return [centroid[:3].tolist() for centroid in centroids]
