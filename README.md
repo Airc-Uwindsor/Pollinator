@@ -8,7 +8,7 @@ The goal of the pollinator is to pollinate the flowers in a precise and optimize
 3. Ensure the required version (3.9.1) of Python is installed
 4. Download and extract the ZIP file and run the program
 
-## Ideation
+## Features
 - Used the process of test, train, valid for training the robot to detect flowers
 - Used realsense and opencv to calculate depth of the target flowers
 - The robot took multiple pictures in various locations to enhance the accuracy of the detection
