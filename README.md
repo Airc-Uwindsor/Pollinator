@@ -47,7 +47,7 @@ The system relies on the Intel RealSense camera to provide both color and depth 
 
 1. **Vector Calculation:** Vectors from the camera to the flowers are calculated using the color and depth images provided by the camera.
 2. **Offset Adjustment:** These vectors are offset to be relative to the Tool Center Point (TCP) of the robotic arm.
-3. **Coordinate System Rotation:** The vectors are then rotated to match the coordinate system of the robot’s base.
+3. **Coordinate System Rotation:** The vectors are then [rotated](https://en.wikipedia.org/wiki/Rodrigues'_rotation_formula) to match the coordinate system of the robot’s base.
 4. **Position Summation:** Each vector is summed with the current TCP position to determine the exact position where the robot needs to move its TCP for successful flower pollination.
 
 ## Limitations and Future Work
