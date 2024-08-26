@@ -1,7 +1,6 @@
 import numpy as np
 from sklearn.cluster import DBSCAN
 from collections import defaultdict
-from vector import Vector
 from config import *
 
 def cluster(points, eps):

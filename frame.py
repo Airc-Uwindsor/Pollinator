@@ -1,5 +1,4 @@
 import numpy as np
-from ultralytics import YOLO
 from vector import Vector
 from config import *
 
@@ -61,9 +60,5 @@ class Frame:
             target_position = current_offset + rotated_vec
 
             target_positions.append(target_position.to_list())
-
-            # print(f'Found target at {target_position.to_list()}')
-        
-        # print(f'Found {len(target_positions)} targets')
 
         return target_positions

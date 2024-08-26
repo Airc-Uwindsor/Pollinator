@@ -56,12 +56,10 @@ class Pollinator:
 
     def vibrate(self):
         '''Vibrates the brush to pollinate the flowers'''
-        # TODO
         time.sleep(5)
 
     def drive(self):
         '''Drives the robot forward to cover more area'''
-        # TODO
         pass
 
     def wait_for_operation(self):
@@ -121,7 +119,7 @@ class Pollinator:
         # Take pictures of the flowers
         self.scan()
 
-        # Home position # TODO: uncomment
+        # Home position
         self.home(async_move=True)
 
         # Find the targets in the pictures taken
