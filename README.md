@@ -27,10 +27,10 @@ This project investigates the automation of tomato flower pollination using a ro
    ```
 
 3. **Configuring the Universal Robotics Cobot Arm:**
-   - Configure the robot’s network settings following the steps in the [Controlling a Universal Robotics Cobot Arm with Python](link) guide.
+   - Configure the robot’s network settings following the steps in the [Controlling a Universal Robotics Cobot Arm with Python](https://docs.google.com/document/d/1391Q5_kfh8zogk00GvKC6fEXd2nENBzFeJEb6xDp1QQ) guide.
 
 4. **Setting Up YOLO for Flower Detection:**
-   - Download and set up the required YOLO models by following the steps in the [YOLO Setup](link) guide.
+   - Download and set up the required YOLO models by following the steps in the [YOLO Setup](https://docs.google.com/document/d/1Yi121LuscpuL_7w4zIUlpQUAxmB2yq7yqiaSiKfTizY) guide.
 
 ## Usage
 
