@@ -60,4 +60,4 @@ Currently, the system is optimized for small-scale environments. Further develop
 
 ## Authors and Acknowledgment
 - Lead Developer: [Ario Barin Ostovary](https://github.com/Doomsy1)
-- Contributors: [jblee0310](https://github.com/jblee0310)
+- Contributors: [Jongbin Lee](https://github.com/jblee0310)
