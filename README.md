@@ -7,38 +7,41 @@ This project investigates the automation of tomato flower pollination using a ro
 
 ### Prerequisites
 1. [**Python 3.9.1**](https://www.python.org/downloads/release/python-391/)
-2. Intel RealSense Camera (with [pyrealsense2 library](https://pypi.org/project/pyrealsense2/))
-3. Universal Robotics Cobot Arm (with [ur_rtde library](https://sdurobotics.gitlab.io/ur_rtde/api/api.html))
-4. [OpenCV](https://pypi.org/project/opencv-python/)
-5. YOLO for object detection (with [ultralytics library](https://github.com/ultralytics/ultralytics))
+2. [**Git**](https://git-scm.com/downloads)
 
 ### Step-by-Step Setup
 
-1. **Clone the Repository:**
+1. **Set up the prerequisites:**
+   - **Python** ([Guide](https://docs.google.com/document/d/1zFBC_VnUeAMrMF134yYSXPRlvTYTMshQ4id7R0SHFds/edit?usp=sharing))
+   - **Git** ([Guide](https://docs.google.com/document/d/1NjS1S9_UF8pZlKE2WCAqn5UzxHE_imNezgLo-BrlS-s/edit?usp=sharing))
+
+2. **Open Command Prompt:**
+   Press `Win`, type `cmd` and press `Enter`
+
+4. **Clone the Repository:**
+    - Download the repository by pasting the following into the terminal:
    ```bash
    git clone https://github.com/Doomsy1/Pollinator
    cd Pollinator
    ```
 
-2. **Install Required Libraries:**
-   Install the necessary Python packages:
+5. **Install Required Libraries:**
+    - Install the necessary Python packages by pasting the following into the terminal:
    ```bash
    pip install -r requirements.txt
    ```
 
-3. **Configuring the Universal Robotics Cobot Arm:**
+6. **Configuring the Universal Robotics Cobot Arm:**
    - Configure the robot’s network settings following the steps in the [Controlling a Universal Robotics Cobot Arm with Python](https://docs.google.com/document/d/1391Q5_kfh8zogk00GvKC6fEXd2nENBzFeJEb6xDp1QQ) guide.
-
-4. **Setting Up YOLO for Flower Detection:**
-   - Download and set up the required YOLO models by following the steps in the [YOLO Setup](https://docs.google.com/document/d/1Yi121LuscpuL_7w4zIUlpQUAxmB2yq7yqiaSiKfTizY) guide.
 
 ## Usage
 
 ### Pollination Process
-- Run `pollinator.py`. This script integrates the camera input, clustering algorithm, and robot control to execute the pollination. Follow the [pollination guide](https://docs.google.com/document/d/1s34lwz2wWb6ooZBrriEXcB6hyON8PhYinvHOR394ba4/edit?usp=sharing) for help.
-
-### Robot Control
-- Use `robot.py` for direct control and testing of the robotic arm's movements.
+Paste the following into the terminal to start the pollinator:
+   ```bash
+   python pollinator.py
+   ```
+- This script integrates the camera input, clustering algorithm, and robot control to execute the pollination.
 
 ## Technical Details
 
