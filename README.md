@@ -37,7 +37,7 @@ This project investigates the automation of tomato flower pollination using a ro
 ## Usage
 
 ### Pollination Process
-Paste the following into the terminal to start the pollinator:
+Ensure both the camera and the robot are connected to your computer then paste the following into the terminal to start the pollinator:
    ```bash
    python pollinator.py
    ```
