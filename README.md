@@ -32,7 +32,7 @@ This project investigates the automation of tomato flower pollination using a ro
    ```
 
 6. **Configuring the Universal Robotics Cobot Arm:**
-   - Configure the robot’s network settings following the steps in the [Controlling a Universal Robotics Cobot Arm with Python](https://docs.google.com/document/d/1391Q5_kfh8zogk00GvKC6fEXd2nENBzFeJEb6xDp1QQ) guide.
+   - Configure the robot’s network settings following the steps in the [Configuring a Universal Robotics Cobot Arm](https://docs.google.com/document/d/1CyodpAacuGGx8rIEQoFwfiqiNlRN47e698ffsrlCcqg/edit?usp=sharing) guide.
 
 ## Usage
 
