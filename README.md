@@ -35,7 +35,7 @@ This project investigates the automation of tomato flower pollination using a ro
 ## Usage
 
 ### Pollination Process
-- Run `pollinator.py`. This script integrates the camera input, clustering algorithm, and robot control to execute the pollination.
+- Run `pollinator.py`. This script integrates the camera input, clustering algorithm, and robot control to execute the pollination. Follow the [pollination guide](https://docs.google.com/document/d/1s34lwz2wWb6ooZBrriEXcB6hyON8PhYinvHOR394ba4/edit?usp=sharing) for help.
 
 ### Robot Control
 - Use `robot.py` for direct control and testing of the robotic arm's movements.
