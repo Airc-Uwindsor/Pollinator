@@ -21,7 +21,7 @@ This project investigates the automation of tomato flower pollination using a ro
 4. **Clone the Repository:**
     - Download the repository by pasting the following into the terminal:
    ```bash
-   git clone https://github.com/Doomsy1/Pollinator
+   git clone https://github.com/Airc-Uwindsor/Pollinator
    cd Pollinator
    ```
 
