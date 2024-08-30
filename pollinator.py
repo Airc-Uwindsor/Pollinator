@@ -57,7 +57,7 @@ class Pollinator:
 
     def vibrate(self):
         '''Vibrates the brush to pollinate the flowers'''
-        time.sleep(5)
+        time.sleep(0.25)
 
     def drive(self):
         '''Drives the robot forward to cover more area'''
@@ -163,9 +163,9 @@ class Pollinator:
 
         for point in path:
             # Back
-            # back = point.copy()
-            # back[TCP.X] -= 0.03
-            # self.robot.move_tcp(back, verbose=False)
+            back = point.copy()
+            back[TCP.X] -= 0.06
+            self.robot.move_tcp(back, verbose=False)
 
             # Move to the point
             self.robot.move_tcp(point, verbose=False)
@@ -174,7 +174,7 @@ class Pollinator:
             self.vibrate()
 
             # Back
-            # self.robot.move_tcp(back, verbose=False)
+            self.robot.move_tcp(back, verbose=False)
 
     def step_back(self):
         '''Steps back to the previous position'''
@@ -200,7 +200,7 @@ class Pollinator:
 
 def main():
     pollinator = Pollinator()
-    for i in range(5):
+    for i in range(25):
         pollinator.run()
 
     pollinator.stop()
