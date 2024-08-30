@@ -1,4 +1,5 @@
 import threading
+import cv2
 import numpy as np
 from robot import TCP, Robot
 from camera import Camera
@@ -89,6 +90,18 @@ class Pollinator:
 
         return safe_targets
 
+    def display(self, frame):
+        '''Displays the images and targets'''
+        if not DISPLAY:
+            return
+        
+        color_image = frame.color_image
+        
+        # Display the color image
+        cv2.imshow('Color Image', color_image)
+
+        cv2.waitKey(1)
+
     def scan(self):
         '''Scans the area and takes pictures of the flowers'''
         self.frames = self.frames[-1:] # Keep the last frame
@@ -104,6 +117,9 @@ class Pollinator:
                 print(f'Taking picture {pic_num + 1} at position {pos_num + 1}')
                 color_image, depth_image = self.camera.take_picture()
                 frame = Frame(color_image, depth_image, current_pose)
+
+                # Display the images
+                self.display(frame)
 
                 self.frames.append(frame)
 
