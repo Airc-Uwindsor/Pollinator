@@ -6,7 +6,7 @@ This project investigates the automation of tomato flower pollination using a ro
 ## Installation
 
 ### Prerequisites
-1. [**Python 3.9.1**](https://www.python.org/downloads/release/python-391/)
+1. [**Python 3.11.8**](https://www.python.org/downloads/release/python-3118/)
 2. [**Git**](https://git-scm.com/downloads)
 
 ### Step-by-Step Setup

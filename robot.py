@@ -1,145 +1,116 @@
-import threading
-import rtde_control
-import rtde_receive
-# https://sdurobotics.gitlab.io/ur_rtde/api/api.html
+# robot.py
+
+import time
+from xarm.wrapper import XArmAPI
 
 class TCP:
     X = 0
     Y = 1
     Z = 2
-    RX = 3
-    RY = 4
-    RZ = 5
-
-DEFAULT_ROTATION_VECTOR = [2.4071581, -2.42914925, 2.41536115]
+    ROLL = 3
+    PITCH = 4
+    YAW = 5
 
 class Robot:
-    def __init__(self, control_ip: str, receive_ip: str, velocity: float = 0.05, acceleration: float = 0.5):
-        # Connect to the RTDE interface
-        print(f'Connecting to control IP: {control_ip} and receive IP: {receive_ip}')
-        self.control_ip = control_ip
-        self.receive_ip = receive_ip
+    def __init__(self, arm_ip: str = '192.168.1.206', speed: float = 100, is_radian: bool = False, home: bool = True):
+        """
+        Initialize the xArm by connecting to the given IP address
+        and setting initial parameters.
+        """
+        print(f'Connecting to xArm at IP: {arm_ip}')
+        self.arm_ip = arm_ip
+        self.speed = speed
+        self.is_radian = is_radian
 
-        self.velocity = velocity
-        self.acceleration = acceleration
+        self.arm = XArmAPI(self.arm_ip, is_radian=self.is_radian)
+        self.arm.motion_enable(True)
+        # 0 = position control mode
+        self.arm.set_mode(0)
+        # 0 = sport state
+        self.arm.set_state(0)
 
-        # Initialize the control and receive interfaces
-        control_thread = threading.Thread(target=self.init_control)
-        receive_thread = threading.Thread(target=self.init_receive)
+        # Example of setting collision sensitivity (range: 0-5)
+        self.arm.set_collision_sensitivity(5)
+        print('xArm connected and ready')
 
-        control_thread.start()
-        receive_thread.start()
-
-        control_thread.join()
-        receive_thread.join()
-
-    def init_control(self):
-        self.rtde_c = rtde_control.RTDEControlInterface(self.control_ip)
-        print('Control interface connected')
-
-    def init_receive(self):
-        self.rtde_r = rtde_receive.RTDEReceiveInterface(self.receive_ip)
-        print('Receive interface connected')
+        if home:
+            self.home()
 
     def get_pose(self):
-        '''Get the current TCP pose of the robot'''
-        return self.rtde_r.getActualTCPPose()
-    
-    def clean_pose(self, pose: list):
-        '''Clean the pose by adding the default rotation vector if it is not provided'''
-        if len(pose) == 3:
-            return pose + DEFAULT_ROTATION_VECTOR
-        return pose
-    
-    def is_pose_safe(self, pose: list):
-        '''Check if the pose is within the safety limits'''
-        clean_pose = self.clean_pose(pose)
-        return self.rtde_c.isPoseWithinSafetyLimits(clean_pose)
-    
-    def is_joint_safe(self, joints: list):
-        '''Check if the joints are within the safety limits'''
-        return self.rtde_c.isJointsWithinSafetyLimits(joints)
-    
-    def is_offset_safe(self, offset: list):
-        '''Check if the offset is safe to move'''
-        current_pose = self.get_pose()
-        new_pose = current_pose.copy()
-        for i in range(len(offset)):
-            new_pose[i] += offset[i]
+        """
+        Returns the current [x, y, z, roll, pitch, yaw] of the robot (in degrees if is_radian=False).
+        """
+        return self.arm.get_position(is_radian=self.is_radian)
 
-        return self.is_pose_safe(new_pose)
+    def move_tcp(self, pose, wait=True):
+        """
+        Move the robot to the given TCP pose: [x, y, z, roll, pitch, yaw].
+        Speed is set in constructor or can be overridden per call.
+        """
+        # For direct substitution, we accept a list of length 6
+        # [x, y, z, roll, pitch, yaw]
+        if len(pose) != 6:
+            raise ValueError("Pose must have 6 elements [x, y, z, roll, pitch, yaw]")
+        self.arm.set_position(
+            *pose,
+            speed=self.speed,
+            wait=wait,
+            is_radian=self.is_radian
+        )
 
-    def move_tcp(self, pose: list, async_move: bool = False, verbose: bool = True):
-        '''Move the robot to the given TCP pose'''
-        clean_pose = self.clean_pose(pose)
+    def move_joints(self, joint_positions, wait=True):
+        """
+        Move the robot to the given joint positions (list of angles).
+        """
+        self.arm.set_servo_angle(
+            servo_id=None,          # move all joints
+            angles=joint_positions,
+            speed=self.speed,
+            is_radian=self.is_radian,
+            wait=wait
+        )
 
-        # Check if the pose is safe
-        if not self.is_pose_safe(clean_pose):
-            self.stop()
-            raise ValueError('Pose is not safe')
-
-        if verbose:
-            print(f'Moving to pose: {clean_pose}')
-        
-        self.rtde_c.moveL(clean_pose, self.velocity, self.acceleration, async_move)
-
-    def move_joints(self, joints: list, async_move: bool = False):
-        '''Move the robot to the given joint pose'''
-
-        # Check if the joints are safe
-        if not self.is_joint_safe(joints):
-            self.stop()
-            raise ValueError('Joints are not safe')
-        
-        self.rtde_c.moveJ(joints, self.velocity*3, self.acceleration, async_move)
+    def stop(self):
+        """
+        Stop the robot. For an emergency stop, you can also use arm.emergency_stop().
+        """
+        # The xArm approach to stopping can vary; set_state(4) or emergency_stop()
+        self.arm.set_state(4)
+        # self.arm.emergency_stop()  # For an immediate e-stop
 
     def read_pose(self):
-        '''Read the current TCP and joint pose of the robot'''
+        """
+        Print the current pose and joint angles.
+        """
+        tcp_pose = self.get_pose()
+        joint_pose = self.arm.get_servo_angle(is_radian=self.is_radian)
+        print(f"Current TCP Pose: {tcp_pose} | Current Joint Pose: {joint_pose}")
 
-        TCP_pose = self.get_pose()
-        cleaned_pose = [round(i, 3) for i in TCP_pose]
+    def home(self, wait=True):
+        """
+        Moves the robot to the 'home' position using xArm's built-in move_gohome method.
+        """
+        self.arm.move_gohome(wait=wait)
 
-        joint_pose = self.rtde_r.getActualQ()
-        cleaned_joint_pose = [round(i, 3) for i in joint_pose]
+    def disconnect(self):
+        """
+        Disconnect from the xArm.
+        """
+        self.arm.disconnect()
+        print("xArm disconnected.")
 
-        print(f'Current TCP Pose: {cleaned_pose}\tCurrent Joint Pose: {cleaned_joint_pose}')
-
-    def get_asynch_status(self):
-        '''Get the status of the asynchronous operation'''
-        # < 0: Operation done / No operation
-        # 0: Operation in progress
-        return self.rtde_c.getAsyncOperationProgress()
-    
-    def is_operation_done(self):
-        status = self.get_asynch_status()
-        return status < 0
-    
-    def stop(self):
-        self.rtde_c.stopScript()
 
 def main():
-    control_ip = '192.168.0.100'
-    receive_ip = '192.168.0.100'
+    robot = Robot(arm_ip='192.168.1.206', home=False)
+    # print pose
+    print(robot.get_pose())
 
-    # Initialize the robot
-    robot = Robot(control_ip, receive_ip, velocity=0.025, acceleration=0.5)
+    # set pose
+    robot.move_tcp([0, 300, 550, 180, -90, 90], wait=True)
 
-    # Get the initial TCP pose - [x, y, z, rx, ry, rz]
-    init_pose = robot.get_pose()
-    print(f'Initial TCP Pose: {init_pose}')
 
-    new_pose = init_pose.copy()
-    new_pose[TCP.Z] += 0.05 # Move 5 cm in the x direction
-    print('Moving Forward')
-    robot.move_tcp(new_pose, async_move=False, verbose=True)
-
-    # Move back to the initial pose
-    print('Moving Back')
-    robot.move_tcp(init_pose, async_move=False, verbose=True)
-
-    # Stop the robot
     robot.stop()
-
+    robot.disconnect()
 
 if __name__ == '__main__':
     main()
